@@ -242,7 +242,8 @@ const API = {
 const CONFIG = {
   rateBase:1100, rateExtra:1200,
   planDays:[1,2,4], planHours:4,
-  startTime:'15:00'
+  startTime:'15:00',
+  startDate:'2026-09-07'   // всё, что раньше этой даты, не существует для инструмента
 };
 
 const STATUS = {
@@ -299,23 +300,25 @@ const bool= v => v===true||v==='true'||v==='TRUE'||v==='1';
 const str = v => v===null||v===undefined||v===''?'':String(v);
 
 function ingest(data){
+  const S = CONFIG.startDate;
   DB.days={};
-  (data.days||[]).forEach(r=>{
+  (data.days||[]).filter(r=>r.date>=S).forEach(r=>{
     DB.days[r.date]={date:r.date,status:r.status||null,hours:num(r.hours),moved_to:r.moved_to||null,
       comment:str(r.comment),payout_id:r.payout_id||null,updated_by:r.updated_by||null,updated_at:r.updated_at||null};
   });
-  DB.purchases=(data.purchases||[]).map(r=>({id:r.id,day:r.day,title:str(r.title),
+  DB.purchases=(data.purchases||[]).filter(r=>r.day>=S).map(r=>({id:r.id,day:r.day,title:str(r.title),
     done:bool(r.done),done_date:r.done_date||null,created_by:r.created_by||null}));
-  DB.expenses=(data.expenses||[]).map(r=>({id:r.id,day:r.day,title:str(r.title),amount:num(r.amount),by:r.by||null}));
+  DB.expenses=(data.expenses||[]).filter(r=>r.day>=S).map(r=>({id:r.id,day:r.day,title:str(r.title),amount:num(r.amount),by:r.by||null}));
   DB.payouts=(data.payouts||[]).map(r=>({id:r.id,from:r.from,to:r.to,total:num(r.total),paid_date:r.paid_date}))
     .sort((a,b)=>a.to<b.to?-1:1);
 }
 
 function getDay(date){
   if (DB.days[date]) return DB.days[date];
-  const isPlan = CONFIG.planDays.includes(new Date(date+'T00:00:00').getDay());
+  const before = date < CONFIG.startDate;
+  const isPlan = !before && CONFIG.planDays.includes(new Date(date+'T00:00:00').getDay());
   return {date,status:isPlan?'плановый':null,hours:isPlan?CONFIG.planHours:0,
-    moved_to:null,comment:'',payout_id:null,updated_by:null,updated_at:null};
+    moved_to:null,comment:'',payout_id:null,updated_by:null,updated_at:null,before};
 }
 function saveDay(day){
   day.updated_by=WHO; day.updated_at=new Date().toISOString();
@@ -401,7 +404,7 @@ function renderWeek(){
     const mid = st
       ? `<b>${st.label}${day.payout_id?'<span class="lock">оплачено</span>':''}</b>
          <i>${work?CONFIG.startTime+'–'+endFor(day.hours):(day.comment||'')}</i>`
-      : `<b style="color:var(--muted);font-weight:400">Свободно</b><i>&nbsp;</i>`;
+      : `<b style="color:var(--muted);font-weight:400">${date<CONFIG.startDate?'До начала':'Свободно'}</b><i>&nbsp;</i>`;
     b.innerHTML=`<span class="dnum"><b>${dd.getDate()}</b><i>${DOW[dd.getDay()]}</i></span>
       <span class="dmid">${mid}${open?`<span class="badge">${open}</span>`:''}${exp?'<span class="dot"></span>':''}</span>
       <span class="dright ${work?'on':''}">${work?fmtH(day.hours)+' ч':'—'}</span>`;
@@ -436,9 +439,12 @@ function closeSheet(){
 }
 function renderSheet(){
   const date=openDate, day=getDay(date), body=document.getElementById('shBody');
-  const locked=!!day.payout_id, work=isWorkStatus(day.status);
+  const before=date<CONFIG.startDate;
+  const locked=!!day.payout_id||before, work=isWorkStatus(day.status);
   let h='';
-  if(locked){
+  if(before){
+    h+=`<div class="sect"><div class="locked">Это до начала работы (${fmtShort(CONFIG.startDate)}). День не учитывается и не редактируется.</div></div>`;
+  } else if(day.payout_id){
     const p=DB.payouts.find(x=>x.id===day.payout_id);
     h+=`<div class="sect"><div class="locked">День входит в выплату${p?' от '+fmtShort(p.paid_date):''} и больше не редактируется.</div></div>`;
   }
@@ -523,7 +529,8 @@ const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"
    ============================================================ */
 function periodStart(){
   const last=DB.payouts.length?DB.payouts[DB.payouts.length-1].to:null;
-  return last?addDays(last,1):addDays(TODAY,-13);
+  const p = last?addDays(last,1):addDays(TODAY,-13);
+  return p<CONFIG.startDate?CONFIG.startDate:p;
 }
 function defaultRange(){
   const back=(parse(TODAY).getDay()-5+7)%7;
