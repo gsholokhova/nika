@@ -10,7 +10,7 @@
 <style>
 :root{
   --paper:#EDEFEA;--card:#FFFFFF;--ink:#18231D;--muted:#6C7A72;
-  --green:#1E6B4F;--amber:#B8801F;--rule:#D7DCD6;--rule-soft:#E7EAE5;
+  --green:#1E6B4F;--amber:#B8801F;--red:#B4453A;--rule:#D7DCD6;--rule-soft:#E7EAE5;
   --safe-b:env(safe-area-inset-bottom,0px);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -19,6 +19,7 @@ body{background:var(--paper);color:var(--ink);font-family:'Archivo',system-ui,sa
   font-size:16px;line-height:1.35;font-variant-numeric:tabular-nums;overscroll-behavior-y:none}
 button,input,textarea{font:inherit;color:inherit;font-variant-numeric:tabular-nums}
 button{background:none;border:0;padding:0;cursor:pointer}
+button[disabled]{cursor:default}
 .num{font-variant-numeric:tabular-nums}
 
 #app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
@@ -27,7 +28,7 @@ header{position:sticky;top:0;z-index:5;background:var(--paper);border-bottom:1px
 .ttl{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
 #sync{width:7px;height:7px;border-radius:50%;background:var(--green);flex:0 0 auto;transition:background .25s}
 #sync.saving{background:var(--amber)}
-#sync.offline{background:#B4453A}
+#sync.offline{background:var(--red)}
 #rolePill{padding:6px 14px;border:1px solid var(--rule);border-radius:999px;font-size:13px;font-weight:500;
   color:var(--muted);user-select:none;-webkit-user-select:none;transition:transform .5s ease,background .5s ease,color .5s ease}
 #rolePill.boss{background:var(--ink);border-color:var(--ink);color:var(--paper)}
@@ -35,7 +36,8 @@ header{position:sticky;top:0;z-index:5;background:var(--paper);border-bottom:1px
 .accum{margin-top:14px;display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
 .accum .big{font-size:38px;font-weight:700;letter-spacing:-.02em;line-height:.95}
 .accum .big span{font-size:16px;font-weight:500;color:var(--muted);margin-left:6px;letter-spacing:0}
-.accum .note{font-size:12.5px;color:var(--muted);text-align:right;max-width:48%;line-height:1.3}
+.accum .big.neg{color:var(--red)}
+.accum .note{font-size:12.5px;color:var(--muted);text-align:right;max-width:52%;line-height:1.3}
 
 .weeknav{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-bottom:1px solid var(--rule-soft)}
 .weeknav .lbl{font-size:14px;font-weight:600}
@@ -51,19 +53,18 @@ main{flex:1;padding-bottom:96px}
 .day:last-child{border-bottom:0}
 .day:active{background:#F7F8F6}
 .day.on{border-left-color:var(--green)}
-.day.exc{border-left-color:var(--amber)}
 .day.past{opacity:.62}
 .day.today{background:#F5F8F5}
 .dnum b{display:block;font-size:19px;font-weight:600}
 .dnum i{display:block;font-style:normal;font-size:11.5px;color:var(--muted);margin-top:1px}
 .dmid{min-width:0}
 .dmid b{display:block;font-size:14.5px;font-weight:500}
+.dmid b.off{color:var(--muted);font-weight:400}
 .dmid i{display:block;font-style:normal;font-size:12.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dright{text-align:right;font-size:14.5px;font-weight:600;white-space:nowrap;color:var(--muted)}
 .dright.on{color:var(--ink)}
 .badge{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 4px;
   border-radius:5px;background:var(--amber);color:#fff;font-size:11px;font-weight:600;margin-left:6px;vertical-align:1px}
-.dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-left:6px;vertical-align:2px}
 .lock{font-size:11.5px;color:var(--muted);margin-left:6px;font-weight:400}
 .wsum{display:flex;justify-content:space-between;padding:12px 18px;font-size:13.5px;color:var(--muted);background:var(--paper)}
 .wsum b{color:var(--ink);font-weight:600;font-size:14.5px}
@@ -73,34 +74,48 @@ nav{position:fixed;bottom:0;left:0;right:0;z-index:6;background:rgba(237,239,234
 nav button{flex:1;padding:11px 0;border-radius:11px;font-size:14.5px;font-weight:600;color:var(--muted)}
 nav button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
 
-.scrim{position:fixed;inset:0;background:rgba(24,35,29,.38);opacity:0;pointer-events:none;transition:opacity .22s;z-index:10}
-.scrim.open{opacity:1;pointer-events:auto}
-.sheet{position:fixed;left:0;right:0;bottom:0;z-index:11;max-width:520px;margin:0 auto;background:var(--card);
-  border-radius:20px 20px 0 0;transform:translateY(101%);transition:transform .26s cubic-bezier(.32,.72,0,1);
-  max-height:92vh;display:flex;flex-direction:column}
-.sheet.open{transform:translateY(0)}
-.grip{width:36px;height:4px;border-radius:2px;background:var(--rule);margin:9px auto 0}
-.shead{padding:12px 18px 10px;border-bottom:1px solid var(--rule-soft);display:flex;justify-content:space-between;align-items:baseline;gap:10px}
-.shead h2{margin:0;font-size:19px;font-weight:600}
-.shead .sub{font-size:12.5px;color:var(--muted)}
-.sbody{padding:16px 18px calc(20px + var(--safe-b));overflow-y:auto}
+/* экран дня — отдельная страница с «Отмена» / «Сохранить» */
+.editor{position:fixed;inset:0;z-index:11;background:var(--paper);display:flex;flex-direction:column;
+  opacity:0;transform:translateX(24px);transition:opacity .18s ease,transform .18s ease}
+.editor[hidden]{display:none}
+.editor.open{opacity:1;transform:none}
+.ebar{flex:0 0 auto;display:grid;grid-template-columns:96px 1fr 96px;align-items:center;gap:6px;
+  padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;border-bottom:1px solid var(--rule);background:var(--paper)}
+.ebar > *{min-width:0}
+.ebtn{padding:9px 6px;font-size:15.5px;font-weight:500;color:var(--muted);text-align:left;border-radius:8px}
+.ebtn.save{color:var(--green);font-weight:700;text-align:right}
+.ebtn:active{background:var(--rule-soft)}
+.etitle{text-align:center;line-height:1.2}
+.etitle b{display:block;font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.etitle span{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.etitle span.unsaved{display:inline-block;margin:0 0 0 6px}
+.ebody{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.ebody .inner{max-width:520px;margin:0 auto;padding:18px 18px 28px}
+.efoot{flex:0 0 auto;border-top:1px solid var(--rule);background:var(--paper);padding:10px 18px calc(10px + var(--safe-b))}
+.efoot .inner{max-width:520px;margin:0 auto;display:flex;gap:8px}
+.efoot button{flex:1;padding:15px;border-radius:12px;font-size:15.5px;font-weight:600}
+.efoot .cancel{flex:0 0 34%;border:1px solid var(--rule);color:var(--muted);background:var(--card)}
+.efoot .savebig{background:var(--green);color:#fff}
+.efoot .savebig.idle{background:var(--ink)}
+.unsaved{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--amber);margin-left:6px;vertical-align:1px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:14px 14px 16px;margin-bottom:14px}
 .sect{margin-bottom:22px}
 .sect:last-child{margin-bottom:0}
 .sect > h3{margin:0 0 9px;font-size:13px;font-weight:600;color:var(--muted)}
 
-.chips{display:flex;flex-wrap:wrap;gap:7px}
-.chip{padding:8px 12px;border:1px solid var(--rule);border-radius:9px;font-size:13.5px;font-weight:500;color:var(--muted)}
-.chip[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
-.chip.amber[aria-pressed=true]{background:var(--amber);border-color:var(--amber)}
-
-.hours{display:flex;align-items:center;gap:14px}
-.hbtn{width:50px;height:50px;border:1px solid var(--rule);border-radius:12px;font-size:22px;font-weight:500;display:grid;place-items:center}
-.hbtn:active{background:var(--rule-soft)}
-.hbtn[disabled]{opacity:.35}
-.hval{flex:1;text-align:center}
-.hval b{display:block;font-size:31px;font-weight:700;letter-spacing:-.02em}
-.hval i{display:block;font-style:normal;font-size:12px;color:var(--muted)}
-.warn{margin-top:10px;font-size:12.5px;color:var(--amber);font-weight:500;text-align:center}
+.timerow{display:flex;gap:10px}
+.timerow label{flex:1 1 0;min-width:0;font-size:12.5px;color:var(--muted)}
+.timerow input{display:block;width:100%;margin-top:5px;border:1px solid var(--rule);border-radius:11px;padding:11px 12px;
+  background:none;font-size:20px;font-weight:600;letter-spacing:-.01em;-webkit-appearance:none;appearance:none;min-height:52px;min-width:0;max-width:100%}
+.timerow input[disabled]{color:var(--ink);opacity:1;background:#F5F7F4;border-color:transparent}
+.calc{margin-top:12px;display:flex;justify-content:space-between;align-items:baseline;font-size:14.5px;color:var(--muted)}
+.calc b{font-size:20px;color:var(--ink);font-weight:700}
+.warn{margin-top:8px;font-size:12.5px;color:var(--amber);font-weight:500}
+.sbtns{display:flex;gap:8px;margin-top:14px}
+.ghost{flex:1;padding:11px 0;border:1px solid var(--rule);border-radius:10px;font-size:13.5px;font-weight:600;color:var(--muted)}
+.ghost.danger{color:var(--red)}
+.ghost:active{background:var(--rule-soft)}
+.addday{width:100%;padding:15px;border-radius:12px;background:var(--green);color:#fff;font-size:15.5px;font-weight:600}
 
 .plist{list-style:none;margin:0;padding:0}
 .pitem{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--rule-soft)}
@@ -110,43 +125,48 @@ nav button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
 .ptext{flex:1;min-width:0;font-size:14.5px}
 .pitem.done .ptext{text-decoration:line-through;color:var(--muted)}
 .ptext small{display:block;color:var(--muted);font-size:11.5px;margin-top:1px;text-decoration:none}
-.pdel{color:var(--muted);font-size:17px;padding:0 2px;line-height:1}
+.pdel{color:var(--muted);font-size:17px;padding:0 2px;line-height:1;white-space:nowrap}
+.pdel.arm{color:var(--red);font-size:12.5px;font-weight:600}
 .padd{display:flex;gap:8px;margin-top:10px}
 .padd input{flex:1;min-width:0;border:1px solid var(--rule);border-radius:9px;padding:10px 11px;background:none;font-size:14.5px}
-.padd input.sm{flex:0 0 86px}
-.padd button{padding:0 15px;border-radius:9px;background:var(--ink);color:var(--paper);font-size:14px;font-weight:600}
+.padd input.sm{flex:0 0 96px}
+.padd button{padding:0 15px;border-radius:9px;background:var(--ink);color:var(--paper);font-size:14px;font-weight:600;white-space:nowrap}
+.padd button.green{background:var(--green)}
 .carry{background:#FDF8EC;border:1px solid #EFDFB8;border-radius:12px;padding:11px 13px;margin-top:12px}
 .carry h4{margin:0 0 5px;font-size:12.5px;font-weight:600;color:var(--amber)}
-.exp{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--rule-soft);font-size:14.5px}
-.exp:last-of-type{border-bottom:0}
-.exp .a{font-weight:600;white-space:nowrap}
-.exp small{display:block;color:var(--muted);font-size:11.5px;margin-top:1px}
 
 textarea{width:100%;border:1px solid var(--rule);border-radius:11px;padding:11px;background:none;resize:vertical;min-height:74px;font-size:14.5px}
 .meta{font-size:11.5px;color:var(--muted);margin-top:14px}
 .locked{background:#F5F7F4;border-radius:11px;padding:12px 13px;font-size:13.5px;color:var(--muted)}
-.datefield{display:flex;gap:9px}
+.datefield{display:flex;gap:9px;align-items:flex-end}
 .datefield label{flex:1;font-size:12.5px;color:var(--muted)}
-.datefield input{display:block;width:100%;margin-top:5px;border:1px solid var(--rule);border-radius:9px;padding:9px 10px;background:none;font-size:14.5px}
+.datefield input{display:block;width:100%;margin-top:5px;border:1px solid var(--rule);border-radius:9px;padding:9px 10px;background:none;font-size:14.5px;min-height:42px}
+.datefield .lnk{font-size:13px;color:var(--green);font-weight:600;padding:0 2px 12px}
 
 .panel{background:var(--card);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:16px 18px;margin-bottom:18px}
-.presets{display:flex;gap:7px;margin-top:11px}
-.presets button{flex:1;padding:9px 0;border:1px solid var(--rule);border-radius:9px;font-size:13px;font-weight:500;color:var(--muted)}
+.panel > h3{margin:0 0 2px;font-size:13px;font-weight:600;color:var(--muted)}
 .led{list-style:none;margin:14px 0 0;padding:0}
 .led li{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--rule-soft);font-size:14.5px}
 .led li.total{border-bottom:0;border-top:2px solid var(--ink);margin-top:4px;padding-top:12px;font-size:17px;font-weight:700}
 .led .k{color:var(--muted)}
 .led li.total .k{color:var(--ink)}
-.paybtn{width:100%;margin-top:16px;padding:15px;border-radius:12px;background:var(--green);color:#fff;font-size:15.5px;font-weight:600}
+.paybtn{width:100%;margin-top:16px;padding:15px;border-radius:12px;background:var(--green);color:#fff;font-size:15.5px;font-weight:600;transition:background .2s}
+.paybtn.arm{background:var(--ink)}
 .paybtn[disabled]{background:var(--rule);color:var(--muted)}
 .hint{font-size:12.5px;color:var(--muted);margin-top:10px;line-height:1.4}
-.hist{padding:0 18px}
+.hist{padding:0 18px;margin-bottom:18px}
 .hist h3{font-size:13px;color:var(--muted);margin:0 0 8px;font-weight:600}
-.hitem{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:12px 14px;margin-bottom:8px;font-size:14px}
+.hitem{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:12px 14px;margin-bottom:8px;font-size:14px}
+button.hitem:active{background:#F7F8F6}
 .hitem .d{color:var(--muted);font-size:12.5px;margin-top:2px}
-.hitem b{font-size:15.5px}
+.hitem b{font-size:15.5px;white-space:nowrap}
+.hitem .r{text-align:right;display:flex;align-items:center;gap:10px}
+.hitem .r small{display:block;color:var(--muted);font-size:11.5px;font-weight:400;margin-top:2px}
+.plus{color:var(--green)}
+.minus{color:var(--ink)}
+.negnote{background:#FBEFED;border:1px solid #EDCFCA;color:var(--red);border-radius:11px;padding:11px 13px;font-size:13.5px;margin:0 18px 18px}
 .empty{padding:22px 18px;color:var(--muted);font-size:14px;text-align:center}
-.foot{padding:20px 18px 10px;font-size:11.5px;color:var(--muted);line-height:1.45}
+.foot{padding:4px 18px 10px;font-size:11.5px;color:var(--muted);line-height:1.45}
 
 #boot{position:fixed;inset:0;z-index:30;background:var(--paper);display:grid;place-items:center;text-align:center;padding:30px}
 #boot .m{font-size:14.5px;color:var(--muted);max-width:300px;line-height:1.5}
@@ -176,6 +196,7 @@ textarea{width:100%;border:1px solid var(--rule);border-radius:11px;padding:11px
   </header>
 
   <main>
+    <!-- НЕДЕЛЯ -->
     <section id="viewWeek">
       <div class="weeknav">
         <button class="arrow" id="prevW" aria-label="Предыдущая неделя">‹</button>
@@ -189,39 +210,75 @@ textarea{width:100%;border:1px solid var(--rule);border-radius:11px;padding:11px
       <div class="wsum"><span>За неделю</span><b class="num" id="wsum"></b></div>
     </section>
 
+    <!-- КАРМАННЫЕ -->
+    <section id="viewPocket" hidden>
+      <div class="panel">
+        <h3>Ника потратила</h3>
+        <div class="padd">
+          <input id="xTitle" placeholder="На что" enterkeyhint="next">
+          <input id="xAmt" class="sm" type="number" inputmode="numeric" placeholder="дин" enterkeyhint="done">
+        </div>
+        <div class="padd">
+          <input id="xDate" type="date">
+          <button id="xAdd">Списать</button>
+        </div>
+      </div>
+      <div class="panel" id="topupPanel" hidden>
+        <h3>Выдать Нике</h3>
+        <div class="padd">
+          <input id="tuAmt" class="sm" type="number" inputmode="numeric" placeholder="дин">
+          <input id="tuNote" placeholder="Комментарий" enterkeyhint="done">
+          <button id="tuAdd" class="green">Выдать</button>
+        </div>
+      </div>
+      <div id="negNote"></div>
+      <div class="hist">
+        <h3>Движение денег</h3>
+        <div id="ops"></div>
+      </div>
+    </section>
+
+    <!-- ОПЛАТА -->
     <section id="viewPay" hidden>
       <div class="panel">
         <div class="datefield">
-          <label>С <input type="date" id="from"></label>
-          <label>По <input type="date" id="to"></label>
-        </div>
-        <div class="presets">
-          <button data-preset="2w">Последние 2 недели</button>
-          <button data-preset="unpaid">Всё неоплаченное</button>
+          <label>Включить дни по <input type="date" id="payTo"></label>
+          <button class="lnk" id="payToday">сегодня</button>
         </div>
         <ul class="led" id="led"></ul>
         <button class="paybtn" id="payBtn">Отметить оплаченным</button>
         <div class="hint" id="payHint"></div>
       </div>
       <div class="hist">
+        <h3 id="payDaysTtl">Дни в этой выплате</h3>
+        <div id="payDays"></div>
+      </div>
+      <div class="hist">
         <h3>История выплат</h3>
         <div id="hist"></div>
       </div>
-      <div class="foot" id="foot"></div>
+      <div class="foot">Оплата пересчитывается сразу, как только меняется любой день. Нажмите на день, чтобы поправить время.</div>
     </section>
   </main>
 
   <nav>
     <button data-tab="week" aria-pressed="true">Неделя</button>
+    <button data-tab="pocket" aria-pressed="false">Карманные</button>
     <button data-tab="pay" aria-pressed="false">Оплата</button>
   </nav>
 </div>
 
-<div class="scrim" id="scrim"></div>
-<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="День">
-  <div class="grip"></div>
-  <div class="shead"><h2 id="shTitle"></h2><div class="sub" id="shSub"></div></div>
-  <div class="sbody" id="shBody"></div>
+<div class="editor" id="editor" role="dialog" aria-modal="true" aria-label="День" hidden>
+  <div class="ebar">
+    <button class="ebtn" id="edCancel">Отмена</button>
+    <div class="etitle"><b id="edTitle"></b><span id="edSub"></span></div>
+    <button class="ebtn save" id="edSave">Сохранить</button>
+  </div>
+  <div class="ebody"><div class="inner" id="edBody"></div></div>
+  <div class="efoot"><div class="inner">
+    <button class="cancel" id="edCancel2">Отмена</button>
+    <button class="savebig" id="edSave2">Сохранить</button>
+  </div></div>
 </div>
 <div id="toast"></div>
 <div id="boot"><div><div class="m" id="bootMsg">Загружаю таблицу…</div><button id="bootRetry" hidden>Попробовать снова</button></div></div>
@@ -229,7 +286,7 @@ textarea{width:100%;border:1px solid var(--rule);border-radius:11px;padding:11px
 <script>
 /* ============================================================
    1. ПОДКЛЮЧЕНИЕ К ТАБЛИЦЕ
-   Вставьте адрес веб-приложения и тот же токен, что в apps-script.gs
+   Адрес веб-приложения и тот же токен, что в apps-script.gs
    ============================================================ */
 const API = {
   url:   'https://script.google.com/macros/s/AKfycbyWk2Rgv0j0VQDDNvah1T5Mr2Wtaep0wMJ0cD6LVQ3MkbbNFkzaB-tGSNVSm7szXnHg2A/exec',
@@ -240,26 +297,26 @@ const API = {
    2. КОНФИГ
    ============================================================ */
 const CONFIG = {
-  rateBase:1100, rateExtra:1200,
-  planDays:[1,2,4], planHours:4,
-  startTime:'15:00',
-  startDate:'2026-09-07'   // всё, что раньше этой даты, не существует для инструмента
+  rateBase:1100,          // первые baseHours часов дня
+  rateExtra:1200,         // всё, что сверх baseHours в этот день
+  baseHours:4,
+  defStart:'15:00', defEnd:'19:00',   // время нового дня по умолчанию
+  startDate:'2026-09-07',             // раньше этой даты инструмента не существует
+  // До этой даты пн/вт/чт считались рабочими сами по себе (старая логика) —
+  // так прошлые недели не пропадут. С этой даты день есть, только если его поставили.
+  manualFrom:'2026-10-12',
+  legacyPlanDays:[1,2,4],
+  nikaEditsTime:false,    // true — Ника тоже сможет добавлять дни и править время
+  // первая выдача карманных — с неё начинается остаток
+  pocketStart:{date:'2026-09-07', amount:10000, comment:'стартовые'}
 };
-
-const STATUS = {
-  'плановый':        {label:'Плановый',        kind:'on',  who:'boss'},
-  'доп':             {label:'Доп. день',       kind:'on',  who:'boss'},
-  'отменён_заранее': {label:'Отменён заранее', kind:'off', who:'boss'},
-  'отменён_в_день':  {label:'Отменён в день',  kind:'exc', who:'boss'},
-  'перенесён':       {label:'Перенесён',       kind:'off', who:'boss'},
-  'пауза':           {label:'Пауза',           kind:'off', who:'boss'},
-  'отгул':           {label:'Не смогу прийти', kind:'off', who:'all'}
-};
+const LEGACY_ON = ['плановый','доп','отменён_в_день'];
 
 /* ============================================================
-   3. СЕТЬ И ОЧЕРЕДЬ ЗАПИСИ
-   Всё, что меняется, сначала правится локально и сразу видно,
-   потом уезжает в таблицу. Не уехало — лежит в очереди и повторяется.
+   3. СЕТЬ
+   Всё меняется сначала на экране, потом копится в очереди
+   и через полсекунды уходит в таблицу одной пачкой.
+   В ответ сразу приходят свежие данные.
    ============================================================ */
 async function api(action, payload){
   const res = await fetch(API.url, {
@@ -273,75 +330,177 @@ async function api(action, payload){
   return j.data;
 }
 
-const QUEUE=[]; let flushing=false;
-function push(action,payload){ QUEUE.push({action,payload}); flush(); }
-async function flush(){
-  if (flushing || !QUEUE.length) return;
-  flushing=true; setSync('saving');
-  while(QUEUE.length){
-    try { await api(QUEUE[0].action, QUEUE[0].payload); QUEUE.shift(); }
-    catch(e){ flushing=false; setSync('offline'); setTimeout(flush,5000); return; }
-  }
-  flushing=false; setSync('ok');
+const KEY = {days:'date',purchases:'id',expenses:'id',payouts:'id',topups:'id'};
+const PENDING = new Map();     // ключ записи → последняя версия изменения
+let INFLIGHT=false, GEN=0, flushT=null;
+
+const opKey = o => o.s+':'+(o.t==='del' ? o.id : o.row[KEY[o.s]]);
+
+function enqueue(o){
+  const k=opKey(o), prev=PENDING.get(k);
+  if(o.t==='up' && prev && prev.t==='up') o={t:'up',s:o.s,row:Object.assign({},prev.row,o.row)};
+  PENDING.set(k,o);
+  GEN++;
+  saveCache();
+  setSync('saving');
+  clearTimeout(flushT); flushT=setTimeout(flush,500);
 }
+
+async function flush(){
+  if(INFLIGHT || !PENDING.size) return;
+  const ops=[...PENDING.values()]; PENDING.clear();
+  INFLIGHT=true; setSync('saving');
+  const g=GEN;
+  try{
+    const data=await api('batch',{ops});
+    INFLIGHT=false;
+    // свежие данные берём, только если за время запроса ничего не меняли
+    if(!PENDING.size && GEN===g){ ingest(data); renderAll(true); }
+    saveCache();
+    if(PENDING.size) flush(); else setSync('ok');
+  }catch(e){
+    INFLIGHT=false;
+    ops.forEach(o=>{
+      const k=opKey(o), newer=PENDING.get(k);
+      if(!newer) PENDING.set(k,o);
+      else if(newer.t==='up' && o.t==='up') PENDING.set(k,{t:'up',s:o.s,row:Object.assign({},o.row,newer.row)});
+    });
+    saveCache(); setSync('offline');
+    clearTimeout(flushT); flushT=setTimeout(flush,5000);
+  }
+}
+
+async function refresh(){
+  if(document.hidden || INFLIGHT || PENDING.size) return;
+  const g=GEN;
+  try{
+    const data=await api('load');
+    if(GEN!==g || INFLIGHT || PENDING.size) return;   // пока ждали, что-то поменяли — не затираем
+    ingest(data); saveCache(); renderAll(true); setSync('ok');
+  }catch(e){ setSync('offline'); }
+}
+
 function setSync(s){
   const el=document.getElementById('sync');
   el.className = s==='ok' ? '' : s;
   el.title = s==='ok' ? 'Всё сохранено' : s==='saving' ? 'Сохраняю…' : 'Нет связи, повторю';
 }
 
+/* локальная копия: страница открывается мгновенно, а неотправленное не теряется */
+const CK='nika-schedule-v2';
+function saveCache(){
+  try{
+    localStorage.setItem(CK, JSON.stringify({
+      data:{days:Object.values(DB.days),purchases:DB.purchases,expenses:DB.expenses,payouts:DB.payouts,topups:DB.topups},
+      pending:[...PENDING.values()]
+    }));
+  }catch(e){}
+}
+function loadCache(){ try{ return JSON.parse(localStorage.getItem(CK)||'null'); }catch(e){ return null; } }
+
 /* ============================================================
    4. ДАННЫЕ
    ============================================================ */
-const DB = { days:{}, purchases:[], expenses:[], payouts:[], seq:Date.now()%1e7 };
+const DB = { days:{}, purchases:[], expenses:[], payouts:[], topups:[], seq:Date.now()%1e7 };
 
-const num = v => v===null||v===undefined||v===''?0:Number(String(v).replace(',','.'));
+const num = v => v===null||v===undefined||v===''?0:Number(String(v).replace(',','.'))||0;
 const bool= v => v===true||v==='true'||v==='TRUE'||v==='1';
-const str = v => v===null||v===undefined||v===''?'':String(v);
+const str = v => v===null||v===undefined?'':String(v);
 
 function ingest(data){
-  const S = CONFIG.startDate;
+  const S=CONFIG.startDate;
   DB.days={};
-  (data.days||[]).filter(r=>r.date>=S).forEach(r=>{
-    DB.days[r.date]={date:r.date,status:r.status||null,hours:num(r.hours),moved_to:r.moved_to||null,
-      comment:str(r.comment),payout_id:r.payout_id||null,updated_by:r.updated_by||null,updated_at:r.updated_at||null};
+  (data.days||[]).forEach(r=>{
+    if(!r.date || r.date<S) return;
+    DB.days[r.date]={date:r.date,status:str(r.status),hours:str(r.hours),start:str(r.start),end:str(r.end),
+      comment:str(r.comment),payout_id:str(r.payout_id),updated_by:str(r.updated_by),updated_at:str(r.updated_at)};
   });
-  DB.purchases=(data.purchases||[]).filter(r=>r.day>=S).map(r=>({id:r.id,day:r.day,title:str(r.title),
-    done:bool(r.done),done_date:r.done_date||null,created_by:r.created_by||null}));
-  DB.expenses=(data.expenses||[]).filter(r=>r.day>=S).map(r=>({id:r.id,day:r.day,title:str(r.title),amount:num(r.amount),by:r.by||null}));
-  DB.payouts=(data.payouts||[]).map(r=>({id:r.id,from:r.from,to:r.to,total:num(r.total),paid_date:r.paid_date}))
+  DB.purchases=(data.purchases||[]).filter(r=>r.id&&r.day>=S).map(r=>({id:r.id,day:r.day,title:str(r.title),
+    done:bool(r.done),done_date:str(r.done_date),created_by:str(r.created_by)}));
+  DB.expenses=(data.expenses||[]).filter(r=>r.id&&r.day).map(r=>({id:r.id,day:r.day,title:str(r.title),amount:num(r.amount),by:str(r.by)}));
+  DB.topups=(data.topups||[]).filter(r=>r.id&&r.date).map(r=>({id:r.id,date:r.date,amount:num(r.amount),comment:str(r.comment),by:str(r.by)}));
+  DB.payouts=(data.payouts||[]).filter(r=>r.id).map(r=>({id:r.id,from:r.from,to:r.to,total:num(r.total),paid_date:r.paid_date}))
     .sort((a,b)=>a.to<b.to?-1:1);
 }
 
-function getDay(date){
-  if (DB.days[date]) return DB.days[date];
-  const before = date < CONFIG.startDate;
-  const isPlan = !before && CONFIG.planDays.includes(new Date(date+'T00:00:00').getDay());
-  return {date,status:isPlan?'плановый':null,hours:isPlan?CONFIG.planHours:0,
-    moved_to:null,comment:'',payout_id:null,updated_by:null,updated_at:null,before};
+/* Есть ли день и какое у него время. Типов дней больше нет: либо день есть, либо нет. */
+function dayInfo(date){
+  const r=DB.days[date]||null;
+  let on=false, start='', end='';
+  if(date>=CONFIG.startDate){
+    if(r && r.status==='нет'){ /* убран вручную */ }
+    else if(r && r.start && r.end){ on=true; start=r.start; end=r.end; }
+    else if(r && LEGACY_ON.includes(r.status)){ on=true; start=CONFIG.defStart; end=plusHours(CONFIG.defStart, num(r.hours)||CONFIG.baseHours); }
+    else if((!r || !r.status) && date<CONFIG.manualFrom && CONFIG.legacyPlanDays.includes(parse(date).getDay())){
+      on=true; start=CONFIG.defStart; end=CONFIG.defEnd;
+    }
+  }
+  const hours=on?hoursBetween(start,end):0;
+  return {date,on,start,end,hours,amount:on?amountFor(hours):0,
+    comment:r?r.comment:'',payout_id:r?r.payout_id:'',updated_by:r?r.updated_by:'',updated_at:r?r.updated_at:''};
 }
-function saveDay(day){
-  day.updated_by=WHO; day.updated_at=new Date().toISOString();
-  DB.days[day.date]=day;
-  push('saveDay',day);
+
+function stamp(o){ o.updated_by=WHO; o.updated_at=new Date().toISOString(); return o; }
+
+function upsert(s,row){
+  if(s==='days'){
+    DB.days[row.date]=Object.assign({date:row.date,status:'',hours:'',start:'',end:'',comment:'',payout_id:'',updated_by:'',updated_at:''},
+      DB.days[row.date]||{}, row);
+  } else {
+    const arr=DB[s], i=arr.findIndex(x=>x.id===row.id);
+    if(i<0) arr.push(Object.assign({},row)); else Object.assign(arr[i],row);
+  }
+  enqueue({t:'up',s,row:Object.assign({},row)});
 }
+function removeRow(s,id){ DB[s]=DB[s].filter(x=>x.id!==id); enqueue({t:'del',s,id}); }
+
+const setDay  =(date,start,end)=>upsert('days',stamp({date,status:'день',start,end,hours:String(hoursBetween(start,end))}));
+const clearDay=date=>upsert('days',stamp({date,status:'нет',start:'',end:'',hours:''}));
+
 const purchasesFor = d => DB.purchases.filter(p=>p.day===d);
 const carriedTo    = d => DB.purchases.filter(p=>!p.done && p.day<d);
-const expensesFor  = d => DB.expenses.filter(e=>e.day===d);
-const newId = () => 'r'+(++DB.seq).toString(36);
+const newId = () => 'r'+(++DB.seq).toString(36)+Math.random().toString(36).slice(2,5);
 
 /* ============================================================
    5. РАСЧЁТ
    ============================================================ */
-function amountOf(day){
-  const s=day.status;
-  if(!s) return 0;
-  if(s==='отменён_в_день') return CONFIG.planHours*CONFIG.rateBase;
-  if(s==='отменён_заранее'||s==='перенесён'||s==='пауза'||s==='отгул') return 0;
-  const h=day.hours||0;
-  return Math.round(Math.min(h,CONFIG.planHours)*CONFIG.rateBase + Math.max(0,h-CONFIG.planHours)*CONFIG.rateExtra);
+function toMin(t){ const m=/^(\d{1,2}):(\d{2})/.exec(t||''); return m?(+m[1])*60+(+m[2]):null; }
+function fromMin(x){ x=((x%1440)+1440)%1440; return String(Math.floor(x/60)).padStart(2,'0')+':'+String(x%60).padStart(2,'0'); }
+const plusHours=(t,h)=>fromMin(toMin(t)+Math.round(h*60));
+function hoursBetween(a,b){
+  const x=toMin(a), y=toMin(b);
+  if(x===null||y===null||y<=x) return 0;
+  return Math.round((y-x)/30)/2;          // округление до получаса
 }
-const isWorkStatus = s => s==='плановый'||s==='доп';
+const amountFor=h=>Math.round(Math.min(h,CONFIG.baseHours)*CONFIG.rateBase + Math.max(0,h-CONFIG.baseHours)*CONFIG.rateExtra);
+
+/* Оплата — зеркало дней: всё неоплаченное до выбранной даты, считается заново при каждом изменении */
+function computePay(to){
+  const days=[]; let baseH=0, extraH=0, later=0;
+  const lastDay=Object.keys(DB.days).sort().pop()||to;
+  const end=lastDay>to?lastDay:to;
+  for(let d=CONFIG.startDate; d<=end; d=addDays(d,1)){
+    const x=dayInfo(d);
+    if(!x.on || x.payout_id) continue;
+    if(d>to){ later++; continue; }
+    days.push(x);
+    baseH+=Math.min(x.hours,CONFIG.baseHours);
+    extraH+=Math.max(0,x.hours-CONFIG.baseHours);
+  }
+  const baseSum=Math.round(baseH*CONFIG.rateBase), extraSum=Math.round(extraH*CONFIG.rateExtra);
+  return {days,baseH,extraH,baseSum,extraSum,later,total:baseSum+extraSum};
+}
+
+/* Карманные: выдано минус потрачено */
+function pocketOps(){
+  const ops=[], ps=CONFIG.pocketStart;
+  if(ps && ps.amount) ops.push({kind:'in',id:'start',fixed:true,date:ps.date,amount:ps.amount,title:'Выдано'+(ps.comment?' · '+ps.comment:''),by:'Г'});
+  DB.topups.forEach(t=>ops.push({kind:'in',id:t.id,date:t.date,amount:t.amount,title:'Выдано'+(t.comment?' · '+t.comment:''),by:t.by}));
+  DB.expenses.filter(e=>e.day>=CONFIG.startDate).forEach(e=>ops.push({kind:'out',id:e.id,date:e.day,amount:e.amount,title:e.title,by:e.by}));
+  ops.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(a.kind==='in'?-1:1));
+  let bal=0; ops.forEach(o=>{ bal+=o.kind==='in'?o.amount:-o.amount; o.balance=bal; });
+  return {ops,balance:bal};
+}
 
 /* ============================================================
    6. ДАТЫ
@@ -355,165 +514,236 @@ const addDays=(s,n)=>{const d=parse(s);d.setDate(d.getDate()+n);return iso(d);};
 const mondayOf=s=>{const d=parse(s);d.setDate(d.getDate()-((d.getDay()+6)%7));return iso(d);};
 const fmtShort=s=>{const d=parse(s);return d.getDate()+' '+MONS[d.getMonth()];};
 const fmtLong=s=>{const d=parse(s);return DOW[d.getDay()]+', '+d.getDate()+' '+MON[d.getMonth()];};
+const fmtDow=s=>{const d=parse(s);return DOW[d.getDay()]+', '+d.getDate()+' '+MONS[d.getMonth()];};
 const fmtH=n=>Number.isInteger(n)?n:n.toFixed(1).replace('.',',');
-const money=n=>Math.round(n).toLocaleString('ru-RU').replace(/\u00A0/g,' ');
-const TODAY=iso(new Date());
+const money=n=>Math.round(n).toLocaleString('ru-RU').replace(/ /g,' ');
+let TODAY=iso(new Date());
 
 /* ============================================================
    7. СОСТОЯНИЕ
    ============================================================ */
 let WHO='Н';
 const isBoss=()=>WHO==='Г';
-let TAB='week', weekStart=mondayOf(TODAY), openDate=null;
+const canPlan=()=>isBoss()||CONFIG.nikaEditsTime;
+let TAB='week', weekStart=mondayOf(TODAY), openDate=null, payTo=TODAY;
+function plural(n,a,b,c){const m=n%100,k=n%10;if(m>10&&m<20)return c;if(k===1)return a;if(k>=2&&k<=4)return b;return c;}
+const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const whoName=w=>w==='Г'?'Галина':'Ника';
 
 /* ============================================================
-   8. ШАПКА
+   8. ОТРИСОВКА
    ============================================================ */
+function renderAll(fromServer){
+  renderWeek(); renderPocket(); renderPay(); renderHeader();
+}
+
 function renderHeader(){
   const pill=document.getElementById('rolePill');
   pill.textContent=isBoss()?'Галина':'Ника';
   pill.classList.toggle('boss',isBoss());
   const big=document.getElementById('accum'), note=document.getElementById('accumNote');
+  big.classList.remove('neg');
   if(TAB==='pay'){
-    big.innerHTML=money(window.__payTotal||0)+'<span>дин</span>';
-    note.textContent='к выплате за выбранный период';
+    const p=computePay(payTo);
+    big.innerHTML=money(p.total)+'<span>дин</span>';
+    note.textContent=p.days.length?`к выплате · ${p.days.length} ${plural(p.days.length,'день','дня','дней')}`:'неоплаченных дней нет';
+  } else if(TAB==='pocket'){
+    const {balance}=pocketOps();
+    big.innerHTML=money(balance)+'<span>дин</span>';
+    big.classList.toggle('neg',balance<0);
+    note.textContent=balance<0?'Ника потратила больше, чем выдано':'остаток карманных';
   } else {
     let h=0,days=0;
-    for(let i=0;i<7;i++){const d=getDay(addDays(weekStart,i)); if(isWorkStatus(d.status)){h+=d.hours||0;days++;}}
+    for(let i=0;i<7;i++){const d=dayInfo(addDays(weekStart,i)); if(d.on){h+=d.hours;days++;}}
     big.innerHTML=fmtH(h)+'<span>ч</span>';
     note.textContent=days?`${days} ${plural(days,'день','дня','дней')} на этой неделе`:'рабочих дней нет';
   }
 }
-function plural(n,a,b,c){const m=n%100,k=n%10;if(m>10&&m<20)return c;if(k===1)return a;if(k>=2&&k<=4)return b;return c;}
 
-/* ============================================================
-   9. НЕДЕЛЯ
-   ============================================================ */
+/* ---------- неделя ---------- */
 function renderWeek(){
   document.getElementById('wlabel').innerHTML=
     `${fmtShort(weekStart)} — ${fmtShort(addDays(weekStart,6))} <em>· ${parse(weekStart).getFullYear()}</em>`;
-  const box=document.getElementById('days'); box.innerHTML=''; let hours=0;
+  const box=document.getElementById('days'); box.innerHTML='';
+  let hours=0, sum=0;
   for(let i=0;i<7;i++){
-    const date=addDays(weekStart,i), day=getDay(date), st=day.status?STATUS[day.status]:null;
-    const work=isWorkStatus(day.status); if(work) hours+=day.hours||0;
-    const open=purchasesFor(date).filter(p=>!p.done).length, exp=expensesFor(date).length;
+    const date=addDays(weekStart,i), d=dayInfo(date);
+    if(d.on){ hours+=d.hours; sum+=d.amount; }
+    const open=purchasesFor(date).filter(p=>!p.done).length;
     const b=document.createElement('button');
-    b.className='day '+(st?st.kind:'off')+(date<TODAY?' past':'')+(date===TODAY?' today':'');
+    b.className='day'+(d.on?' on':'')+(date<TODAY?' past':'')+(date===TODAY?' today':'');
     b.dataset.date=date;
     const dd=parse(date);
-    const mid = st
-      ? `<b>${st.label}${day.payout_id?'<span class="lock">оплачено</span>':''}</b>
-         <i>${work?CONFIG.startTime+'–'+endFor(day.hours):(day.comment||'')}</i>`
-      : `<b style="color:var(--muted);font-weight:400">${date<CONFIG.startDate?'До начала':'Свободно'}</b><i>&nbsp;</i>`;
+    const mid = d.on
+      ? `<b>${d.start}–${d.end}${d.payout_id?'<span class="lock">оплачено</span>':''}</b><i>${esc(d.comment)||'&nbsp;'}</i>`
+      : `<b class="off">${date<CONFIG.startDate?'До начала':'—'}</b><i>${esc(d.comment)||'&nbsp;'}</i>`;
     b.innerHTML=`<span class="dnum"><b>${dd.getDate()}</b><i>${DOW[dd.getDay()]}</i></span>
-      <span class="dmid">${mid}${open?`<span class="badge">${open}</span>`:''}${exp?'<span class="dot"></span>':''}</span>
-      <span class="dright ${work?'on':''}">${work?fmtH(day.hours)+' ч':'—'}</span>`;
+      <span class="dmid">${mid}${open?`<span class="badge">${open}</span>`:''}</span>
+      <span class="dright ${d.on?'on':''}">${d.on?fmtH(d.hours)+' ч':''}</span>`;
     box.appendChild(b);
   }
-  document.getElementById('wsum').textContent=fmtH(hours)+' ч';
-  renderHeader();
-}
-function endFor(hours){
-  const [H,M]=CONFIG.startTime.split(':').map(Number);
-  const t=H*60+M+hours*60;
-  return String(Math.floor(t/60)).padStart(2,'0')+':'+String(Math.round(t%60)).padStart(2,'0');
+  document.getElementById('wsum').textContent=fmtH(hours)+' ч'+(sum?' · '+money(sum)+' дин':'');
 }
 
-/* ============================================================
-   10. ДЕНЬ
-   ============================================================ */
+/* ---------- экран дня ----------
+   Всё, что меняется на этом экране, живёт в черновике (DRAFT)
+   и уходит в таблицу только по «Сохранить». «Отмена» или жест «назад» — черновик выбрасывается. */
+let DRAFT=null, edPushed=false, edHideT=null;
+
 function openDay(date){
+  const d=dayInfo(date);
+  const own=purchasesFor(date).map(p=>Object.assign({},p));
+  const carry=carriedTo(date).map(p=>Object.assign({},p));
+  DRAFT={date,orig:{on:d.on,start:d.start,end:d.end,comment:d.comment},
+    on:d.on,start:d.start||CONFIG.defStart,end:d.end||CONFIG.defEnd,comment:d.comment,
+    own,carry,added:[],removed:[]};
   openDate=date;
-  const day=getDay(date);
-  document.getElementById('shTitle').textContent=fmtLong(date);
-  document.getElementById('shSub').textContent=
-    day.payout_id?'В закрытой выплате':(day.status?STATUS[day.status].label:'Свободный день');
-  renderSheet();
-  document.getElementById('sheet').classList.add('open');
-  document.getElementById('scrim').classList.add('open');
+  renderEditor();
+  const ed=document.getElementById('editor');
+  clearTimeout(edHideT);
+  ed.hidden=false; ed.offsetWidth; ed.classList.add('open');
+  ed.querySelector('.ebody').scrollTop=0;
+  document.body.style.overflow='hidden';
+  try{ history.pushState({nikaDay:date},''); edPushed=true; }catch(e){ edPushed=false; }
 }
-function closeSheet(){
-  document.getElementById('sheet').classList.remove('open');
-  document.getElementById('scrim').classList.remove('open');
-  openDate=null; renderWeek(); renderPay();
+
+function hideEditor(){
+  const ed=document.getElementById('editor');
+  if(document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  ed.classList.remove('open');
+  clearTimeout(edHideT); edHideT=setTimeout(()=>{ ed.hidden=true; },200);
+  document.body.style.overflow='';
+  DRAFT=null; openDate=null;
 }
-function renderSheet(){
-  const date=openDate, day=getDay(date), body=document.getElementById('shBody');
-  const before=date<CONFIG.startDate;
-  const locked=!!day.payout_id||before, work=isWorkStatus(day.status);
+function closeEditor(save){
+  if(!DRAFT) return;
+  if(save && draftDirty()){ commitDraft(); toast('Сохранено'); }
+  hideEditor();
+  renderAll();
+  if(edPushed){ edPushed=false; try{ history.back(); }catch(e){} }
+}
+window.addEventListener('popstate',()=>{
+  if(DRAFT){ edPushed=false; hideEditor(); renderAll(); }   // «назад» = отмена
+});
+
+function draftDirty(){
+  if(!DRAFT) return false;
+  const o=DRAFT.orig;
+  if(DRAFT.on!==o.on) return true;
+  if(DRAFT.on && (DRAFT.start!==o.start || DRAFT.end!==o.end)) return true;
+  if(DRAFT.comment!==o.comment) return true;
+  if(DRAFT.added.length || DRAFT.removed.length) return true;
+  const changed=list=>list.some(p=>{ const src=DB.purchases.find(x=>x.id===p.id); return src && src.done!==p.done; });
+  return changed(DRAFT.own)||changed(DRAFT.carry);
+}
+
+function commitDraft(){
+  const D=DRAFT, o=D.orig, date=D.date;
+  const patch={date};
+  let dayChanged=false;
+  if(D.on && (!o.on || D.start!==o.start || D.end!==o.end)){
+    Object.assign(patch,{status:'день',start:D.start,end:D.end,hours:String(hoursBetween(D.start,D.end))}); dayChanged=true;
+  } else if(!D.on && o.on){
+    Object.assign(patch,{status:'нет',start:'',end:'',hours:''}); dayChanged=true;
+  }
+  if(D.comment!==o.comment){ patch.comment=D.comment; dayChanged=true; }
+  if(dayChanged) upsert('days',stamp(patch));
+
+  D.own.concat(D.carry).forEach(p=>{
+    const src=DB.purchases.find(x=>x.id===p.id);
+    if(src && src.done!==p.done) upsert('purchases',{id:p.id,done:p.done,done_date:p.done?date:''});
+  });
+  D.added.forEach(p=>upsert('purchases',p));
+  D.removed.forEach(id=>removeRow('purchases',id));
+}
+
+function renderEditor(){
+  const D=DRAFT, date=D.date, info=dayInfo(date), body=document.getElementById('edBody');
+  const before=date<CONFIG.startDate, locked=!!info.payout_id||before;
+  const edit=!locked && canPlan();
+  const dirty=draftDirty();
+
+  document.getElementById('edTitle').textContent=fmtLong(date);
+  document.getElementById('edSub').innerHTML=(info.payout_id?'Оплачено':(D.on?'Рабочий день':'Свободный день'))+(dirty?'<span class="unsaved" title="Есть несохранённые изменения"></span>':'');
+  // в закрытых днях сохранять нечего — остаётся одна кнопка «Закрыть»
+  document.getElementById('edSave').hidden=locked;
+  document.getElementById('edSave2').hidden=locked;
+  document.getElementById('edCancel').textContent=locked?'Закрыть':'Отмена';
+  document.getElementById('edCancel2').textContent=locked?'Закрыть':'Отмена';
+  document.getElementById('edCancel2').style.flex=locked?'1':'';
+  document.getElementById('edSave2').classList.toggle('idle',!dirty);
+
   let h='';
   if(before){
-    h+=`<div class="sect"><div class="locked">Это до начала работы (${fmtShort(CONFIG.startDate)}). День не учитывается и не редактируется.</div></div>`;
-  } else if(day.payout_id){
-    const p=DB.payouts.find(x=>x.id===day.payout_id);
+    h+=`<div class="sect"><div class="locked">Это до начала работы (${fmtShort(CONFIG.startDate)}). День не учитывается.</div></div>`;
+  } else if(info.payout_id){
+    const p=DB.payouts.find(x=>x.id===info.payout_id);
     h+=`<div class="sect"><div class="locked">День входит в выплату${p?' от '+fmtShort(p.paid_date):''} и больше не редактируется.</div></div>`;
   }
-  const keys=Object.keys(STATUS).filter(k=>isBoss()||STATUS[k].who==='all'||day.status===k);
-  const editable=k=>!locked&&(isBoss()||STATUS[k].who==='all');
-  h+=`<div class="sect"><h3>Статус</h3><div class="chips">`;
-  keys.forEach(k=>{
-    h+=`<button class="chip${STATUS[k].kind==='exc'?' amber':''}" data-st="${k}" aria-pressed="${day.status===k}" ${editable(k)?'':'disabled'}>${STATUS[k].label}</button>`;
-  });
-  if(day.status&&(isBoss()||day.status==='отгул'))
-    h+=`<button class="chip" data-st="" aria-pressed="false" ${locked?'disabled':''}>Убрать</button>`;
-  h+=`</div>`;
-  if(day.status==='перенесён'&&isBoss())
-    h+=`<div class="datefield" style="margin-top:11px"><label>Перенесён на
-        <input type="date" id="movedTo" value="${day.moved_to||''}" ${locked?'disabled':''}></label></div>`;
-  h+=`</div>`;
 
-  if(work){
-    h+=`<div class="sect"><h3>Часы</h3><div class="hours">
-      <button class="hbtn" data-h="-0.5" ${locked||day.hours<=0.5?'disabled':''}>−</button>
-      <div class="hval"><b class="num">${fmtH(day.hours)} ч</b><i>${CONFIG.startTime}–${endFor(day.hours)}</i></div>
-      <button class="hbtn" data-h="0.5" ${locked?'disabled':''}>+</button></div>
-      ${day.hours<CONFIG.planHours?`<div class="warn">Меньше плановых ${CONFIG.planHours} ч</div>`:''}
-      ${day.hours>CONFIG.planHours?`<div class="warn">+${fmtH(day.hours-CONFIG.planHours)} ч сверх плана</div>`:''}
-    </div>`;
+  if(!before){
+    h+=`<div class="sect"><h3>Работа</h3>`;
+    if(D.on){
+      h+=`<div class="card"><div class="timerow">
+          <label>С<input type="time" id="tStart" step="900" value="${D.start}" ${edit?'':'disabled'}></label>
+          <label>До<input type="time" id="tEnd" step="900" value="${D.end}" ${edit?'':'disabled'}></label>
+        </div><div id="calc"></div></div>`;
+      if(edit){
+        h+=`<div class="sbtns"><button class="ghost" id="tReset">${CONFIG.defStart}–${CONFIG.defEnd}</button>
+            <button class="ghost danger" id="dayOff">Убрать день</button></div>`;
+      }
+    } else if(edit){
+      h+=`<button class="addday" id="dayOn">Ника работает в этот день</button>
+          <div class="hint">Поставится ${CONFIG.defStart}–${CONFIG.defEnd}, время можно поправить.</div>`;
+    } else {
+      h+=`<div class="locked">В этот день Ника не работает.</div>`;
+    }
+    h+=`</div>`;
   }
 
   h+=`<div class="sect"><h3>Покупки</h3><ul class="plist">`;
-  const list=purchasesFor(date);
+  const list=D.own.concat(D.added);
   if(!list.length) h+=`<li class="pitem" style="border:0;color:var(--muted);font-size:14px">Пока ничего</li>`;
   list.forEach(p=>{
     h+=`<li class="pitem ${p.done?'done':''}">
       <button class="tick" data-tick="${p.id}" aria-pressed="${p.done}" ${locked?'disabled':''}>✓</button>
       <span class="ptext">${esc(p.title)}${p.done&&p.done_date?`<small>куплено ${fmtShort(p.done_date)}</small>`:''}</span>
-      <button class="pdel" data-del="${p.id}" aria-label="Удалить" ${locked?'disabled':''}>×</button></li>`;
+      ${locked?'':`<button class="pdel" data-del="${p.id}" aria-label="Удалить">×</button>`}</li>`;
   });
   h+=`</ul>`;
   if(!locked) h+=`<div class="padd"><input id="pnew" placeholder="Что купить" enterkeyhint="done"><button id="paddBtn">Добавить</button></div>`;
-  const carry=carriedTo(date);
-  if(carry.length){
+  if(D.carry.length){
     h+=`<div class="carry"><h4>Осталось с прошлых дней</h4><ul class="plist">`;
-    carry.forEach(p=>{
-      h+=`<li class="pitem"><button class="tick" data-tick="${p.id}" aria-pressed="false">✓</button>
+    D.carry.forEach(p=>{
+      h+=`<li class="pitem ${p.done?'done':''}"><button class="tick" data-tick="${p.id}" aria-pressed="${p.done}" ${locked?'disabled':''}>✓</button>
           <span class="ptext">${esc(p.title)}<small>с ${fmtShort(p.day)}</small></span></li>`;
     });
     h+=`</ul></div>`;
   }
   h+=`</div>`;
 
-  h+=`<div class="sect"><h3>Дополнительные расходы</h3>`;
-  const exp=expensesFor(date);
-  if(!exp.length) h+=`<div style="color:var(--muted);font-size:14px;padding:2px 0 4px">Ника ничего не тратила</div>`;
-  exp.forEach(e=>{
-    h+=`<div class="exp"><span>${esc(e.title)}<small>внесла ${e.by==='Г'?'Галина':'Ника'}</small></span>
-      <span style="display:flex;gap:8px;align-items:flex-start"><span class="a num">${money(e.amount)}</span>
-      ${locked?'':`<button class="pdel" data-delexp="${e.id}" aria-label="Удалить">×</button>`}</span></div>`;
-  });
-  if(!locked)
-    h+=`<div class="padd"><input id="enew" placeholder="На что" enterkeyhint="done">
-        <input id="eamt" class="sm" type="number" inputmode="numeric" placeholder="дин">
-        <button id="eaddBtn">+</button></div>
-        <div style="font-size:11.5px;color:var(--muted);margin-top:7px">Возвращается отдельной строкой в выплате</div>`;
-  h+=`</div>`;
-
   h+=`<div class="sect"><h3>Комментарий</h3>
-      <textarea id="cmt" placeholder="Что было в этот день" ${locked?'disabled':''}>${esc(day.comment)}</textarea></div>`;
-  if(day.updated_by)
-    h+=`<div class="meta">Изменено: ${day.updated_by==='Г'?'Галина':'Ника'}, ${when(day.updated_at)}</div>`;
+      <textarea id="cmt" placeholder="Что было в этот день" ${locked?'disabled':''}>${esc(D.comment)}</textarea></div>`;
+  if(info.updated_by)
+    h+=`<div class="meta">Изменено: ${whoName(info.updated_by)}${when(info.updated_at)?', '+when(info.updated_at):''}</div>`;
   body.innerHTML=h;
+  renderCalc();
+}
+/* только цифры под временем — чтобы не перерисовывать поля, пока их крутят */
+function renderCalc(){
+  const box=document.getElementById('calc'); if(!box||!DRAFT) return;
+  const h=hoursBetween(DRAFT.start,DRAFT.end);
+  let s=`<div class="calc"><span><b class="num">${fmtH(h)} ч</b></span><span class="num">${money(amountFor(h))} дин</span></div>`;
+  if(h===0) s+=`<div class="warn">Конец раньше начала — день не считается</div>`;
+  else if(h>CONFIG.baseHours) s+=`<div class="warn">${fmtH(CONFIG.baseHours)} ч по ${money(CONFIG.rateBase)} + ${fmtH(h-CONFIG.baseHours)} ч по ${money(CONFIG.rateExtra)}</div>`;
+  box.innerHTML=s;
+}
+function markDirty(){
+  const dirty=draftDirty();
+  const info=DRAFT?dayInfo(DRAFT.date):null;
+  if(!info) return;
+  document.getElementById('edSub').innerHTML=(info.payout_id?'Оплачено':(DRAFT.on?'Рабочий день':'Свободный день'))+(dirty?'<span class="unsaved"></span>':'');
+  document.getElementById('edSave2').classList.toggle('idle',!dirty);
 }
 function when(s){
   const d=new Date(s); if(isNaN(d)) return '';
@@ -522,75 +752,93 @@ function when(s){
   if(day===addDays(TODAY,-1)) return 'вчера '+t;
   return fmtShort(day)+' '+t;
 }
-const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-/* ============================================================
-   11. ОПЛАТА
-   ============================================================ */
-function periodStart(){
-  const last=DB.payouts.length?DB.payouts[DB.payouts.length-1].to:null;
-  const p = last?addDays(last,1):addDays(TODAY,-13);
-  return p<CONFIG.startDate?CONFIG.startDate:p;
+/* ---------- карманные ---------- */
+function renderPocket(){
+  document.getElementById('topupPanel').hidden=!isBoss();
+  const xd=document.getElementById('xDate');
+  xd.min=CONFIG.startDate; if(!xd.value) xd.value=TODAY;
+  const {ops,balance}=pocketOps();
+  document.getElementById('negNote').innerHTML = balance<0
+    ? `<div class="negnote">Ника потратила на ${money(-balance)} дин больше, чем было выдано. Выдайте ещё — минус закроется.</div>` : '';
+  const box=document.getElementById('ops');
+  if(!ops.length){ box.innerHTML='<div class="empty">Пока ничего не выдано и не потрачено</div>'; return; }
+  box.innerHTML='';
+  [...ops].reverse().forEach(o=>{
+    const canDel = !o.fixed && (isBoss() || (o.kind==='out' && o.by==='Н'));
+    const el=document.createElement('div'); el.className='hitem';
+    el.innerHTML=`<span>${esc(o.title)}<div class="d">${fmtShort(o.date)}${o.by?' · '+whoName(o.by):''}</div></span>
+      <span class="r"><span><b class="num ${o.kind==='in'?'plus':'minus'}">${o.kind==='in'?'+':'−'}${money(o.amount)}</b>
+      <small class="num">ост. ${money(o.balance)}</small></span>
+      ${canDel?`<button class="pdel" data-del2="${o.kind}:${o.id}" aria-label="Удалить">×</button>`:''}</span>`;
+    box.appendChild(el);
+  });
 }
-function defaultRange(){
-  const back=(parse(TODAY).getDay()-5+7)%7;
-  const to=addDays(TODAY,-back), from=periodStart();
-  return {from,to:to<from?from:to};
-}
+
+/* ---------- оплата ---------- */
+let payArmed=false, payArmT=null;
 function renderPay(){
-  const from=document.getElementById('from').value, to=document.getElementById('to').value;
-  const led=document.getElementById('led');
-  if(!from||!to||from>to){led.innerHTML='<li class="k">Выберите период</li>';window.__payTotal=0;renderHeader();return;}
-  let planDays=0,planSum=0,extraH=0,extraSum=0,cancel=0,cancelSum=0,lockedN=0;
-  for(let d=from; d<=to; d=addDays(d,1)){
-    const day=DB.days[d]||getDay(d);
-    if(day.payout_id){lockedN++;continue;}
-    if(!day.status) continue;
-    if(day.status==='отменён_в_день'){cancel++;cancelSum+=amountOf(day);continue;}
-    if(isWorkStatus(day.status)){
-      const hh=day.hours||0; planDays++;
-      planSum+=Math.min(hh,CONFIG.planHours)*CONFIG.rateBase;
-      extraH+=Math.max(0,hh-CONFIG.planHours);
-      extraSum+=Math.max(0,hh-CONFIG.planHours)*CONFIG.rateExtra;
-    }
-  }
-  let expSum=0;
-  DB.expenses.forEach(e=>{ if(e.day>=from&&e.day<=to&&!(DB.days[e.day]&&DB.days[e.day].payout_id)) expSum+=e.amount||0; });
-  const total=planSum+extraSum+cancelSum+expSum;
-  window.__payTotal=total;
-  let h=row(`Рабочих дней · ${planDays}`,planSum);
-  if(extraH) h+=row(`Дополнительные часы · ${fmtH(extraH)} ч`,extraSum);
-  if(cancel) h+=row(`Отменены в день · ${cancel}`,cancelSum);
-  if(expSum) h+=row('Расходы Ники',expSum);
-  h+=`<li class="total"><span class="k">К выплате</span><span class="num">${money(total)} дин</span></li>`;
-  led.innerHTML=h;
+  const inp=document.getElementById('payTo');
+  if(document.activeElement!==inp) inp.value=payTo;
+  const p=computePay(payTo);
+  let h='';
+  h+=row(`Базовые часы · ${fmtH(p.baseH)} ч × ${money(CONFIG.rateBase)}`,p.baseSum);
+  if(p.extraH) h+=row(`Сверх ${CONFIG.baseHours} ч в день · ${fmtH(p.extraH)} ч × ${money(CONFIG.rateExtra)}`,p.extraSum);
+  h+=`<li class="total"><span class="k">К выплате</span><span class="num">${money(p.total)} дин</span></li>`;
+  document.getElementById('led').innerHTML=h;
+
   const btn=document.getElementById('payBtn');
-  btn.disabled=!isBoss()||total===0;
+  btn.disabled=!isBoss()||p.total===0;
+  if(btn.disabled) disarmPay();
+  btn.textContent=payArmed?`Подтвердить: ${money(p.total)} дин`:'Отметить оплаченным';
+  btn.classList.toggle('arm',payArmed);
   document.getElementById('payHint').textContent=
     !isBoss()?'Отмечать выплаты может только Галина.'
-    :lockedN?`${lockedN} ${plural(lockedN,'день','дня','дней')} уже входят в закрытые выплаты и не учтены.`
-    :'После отметки дни периода блокируются от изменений.';
+    :payArmed?'Нажмите ещё раз — дни этой выплаты закроются от изменений.'
+    :p.later?`Ещё ${p.later} ${plural(p.later,'день','дня','дней')} после ${fmtShort(payTo)} — в следующую выплату.`
+    :'После отметки дни выплаты закрываются от изменений.';
+
+  const pd=document.getElementById('payDays');
+  document.getElementById('payDaysTtl').textContent=p.days.length?`Дни в этой выплате · ${p.days.length}`:'Дни в этой выплате';
+  pd.innerHTML=p.days.length?'':'<div class="empty">Все дни оплачены</div>';
+  p.days.forEach(d=>{
+    const b=document.createElement('button'); b.className='hitem'; b.dataset.date=d.date;
+    b.innerHTML=`<span>${fmtDow(d.date)}<div class="d">${d.start}–${d.end} · ${fmtH(d.hours)} ч</div></span><b class="num">${money(d.amount)}</b>`;
+    pd.appendChild(b);
+  });
+
   const hist=document.getElementById('hist');
   hist.innerHTML=DB.payouts.length?'':'<div class="empty">Выплат пока не было</div>';
-  [...DB.payouts].reverse().forEach(p=>{
+  [...DB.payouts].reverse().forEach(x=>{
     const el=document.createElement('div'); el.className='hitem';
-    el.innerHTML=`<span>${fmtShort(p.from)} — ${fmtShort(p.to)}<div class="d">отмечено ${fmtShort(p.paid_date)}</div></span><b class="num">${money(p.total)} дин</b>`;
+    el.innerHTML=`<span>${fmtShort(x.from)} — ${fmtShort(x.to)}<div class="d">отмечено ${fmtShort(x.paid_date)}</div></span><b class="num">${money(x.total)} дин</b>`;
     hist.appendChild(el);
   });
-  renderHeader();
 }
 const row=(k,v)=>`<li><span class="k">${k}</span><span class="num">${money(v)}</span></li>`;
+function disarmPay(){ payArmed=false; clearTimeout(payArmT); }
+
+function closePayout(){
+  const p=computePay(payTo);
+  if(!p.total) return;
+  const dates=p.days.map(d=>d.date).sort();
+  const payout={id:newId(),from:dates[0],to:payTo,total:p.total,paid_date:TODAY};
+  p.days.forEach(d=>upsert('days',stamp({date:d.date,payout_id:payout.id})));
+  upsert('payouts',payout);
+  DB.payouts.sort((a,b)=>a.to<b.to?-1:1);
+  disarmPay(); renderAll(); toast('Выплата отмечена');
+}
 
 /* ============================================================
-   12. РОЛЬ
+   9. РОЛЬ
    ============================================================ */
 const pill=document.getElementById('rolePill');
 let holdT=null;
 pill.addEventListener('pointerdown',()=>{
-  if(isBoss()){ WHO='Н'; toast('Режим Ники'); refreshAll(); return; }
+  if(isBoss()){ WHO='Н'; toast('Режим Ники'); disarmPay(); renderAll(); return; }
   pill.classList.add('pressing');
   holdT=setTimeout(()=>{
-    pill.classList.remove('pressing'); WHO='Г'; toast('Режим Галины'); refreshAll();
+    pill.classList.remove('pressing'); WHO='Г'; toast('Режим Галины'); renderAll();
     if(navigator.vibrate) navigator.vibrate(12);
   },700);
 });
@@ -598,7 +846,6 @@ pill.addEventListener('pointerdown',()=>{
   pill.addEventListener(ev,()=>{clearTimeout(holdT);pill.classList.remove('pressing');}));
 pill.addEventListener('contextmenu',e=>e.preventDefault());
 
-function refreshAll(){ renderWeek(); renderPay(); if(openDate) renderSheet(); }
 let toastT=null;
 function toast(m){
   const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show');
@@ -606,148 +853,167 @@ function toast(m){
 }
 
 /* ============================================================
-   13. СОБЫТИЯ
+   10. СОБЫТИЯ
    ============================================================ */
 document.querySelectorAll('nav button').forEach(b=>{
   b.onclick=()=>{
     TAB=b.dataset.tab;
     document.querySelectorAll('nav button').forEach(x=>x.setAttribute('aria-pressed',x===b));
-    document.getElementById('viewWeek').hidden=TAB!=='week';
-    document.getElementById('viewPay').hidden =TAB!=='pay';
-    if(TAB==='pay') renderPay(); else renderHeader();
+    document.getElementById('viewWeek').hidden  =TAB!=='week';
+    document.getElementById('viewPocket').hidden=TAB!=='pocket';
+    document.getElementById('viewPay').hidden   =TAB!=='pay';
+    disarmPay(); renderAll();
+    window.scrollTo(0,0);
   };
 });
-document.getElementById('prevW').onclick=()=>{weekStart=addDays(weekStart,-7);renderWeek();};
-document.getElementById('nextW').onclick=()=>{weekStart=addDays(weekStart,7);renderWeek();};
-document.getElementById('todayBtn').onclick=()=>{weekStart=mondayOf(TODAY);renderWeek();};
+document.getElementById('prevW').onclick=()=>{weekStart=addDays(weekStart,-7);renderAll();};
+document.getElementById('nextW').onclick=()=>{weekStart=addDays(weekStart,7);renderAll();};
+document.getElementById('todayBtn').onclick=()=>{weekStart=mondayOf(TODAY);renderAll();};
 document.getElementById('days').onclick=e=>{const b=e.target.closest('.day');if(b)openDay(b.dataset.date);};
-document.getElementById('scrim').onclick=closeSheet;
+document.getElementById('payDays').onclick=e=>{const b=e.target.closest('[data-date]');if(b)openDay(b.dataset.date);};
 
 let tx=0,ty=0;
 const vw=document.getElementById('viewWeek');
 vw.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY;},{passive:true});
 vw.addEventListener('touchend',e=>{
   const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
-  if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*2){weekStart=addDays(weekStart,dx<0?7:-7);renderWeek();}
+  if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*2){weekStart=addDays(weekStart,dx<0?7:-7);renderAll();}
 },{passive:true});
 
-document.getElementById('shBody').addEventListener('click',e=>{
-  const day=getDay(openDate);
-  const st=e.target.closest('[data-st]');
-  if(st){
-    const v=st.dataset.st;
-    day.status=v||null;
-    if(isWorkStatus(v)&&!day.hours) day.hours=CONFIG.planHours;
-    saveDay(day);
-    document.getElementById('shSub').textContent=day.status?STATUS[day.status].label:'Свободный день';
-    renderSheet(); return;
-  }
-  const hb=e.target.closest('[data-h]');
-  if(hb){ day.hours=Math.max(0,Math.round((day.hours+parseFloat(hb.dataset.h))*2)/2); saveDay(day); renderSheet(); return; }
+/* экран дня */
+['edCancel','edCancel2'].forEach(id=>document.getElementById(id).onclick=()=>closeEditor(false));
+['edSave','edSave2'].forEach(id=>document.getElementById(id).onclick=()=>{
+  // время, которое ещё крутится в поле, тоже забираем
+  const s=document.getElementById('tStart'), en=document.getElementById('tEnd'), c=document.getElementById('cmt');
+  if(DRAFT && s && en && toMin(s.value)!==null && toMin(en.value)!==null){ DRAFT.start=s.value; DRAFT.end=en.value; }
+  if(DRAFT && c && !c.disabled) DRAFT.comment=c.value;
+  closeEditor(true);
+});
+const edBody=document.getElementById('edBody');
+edBody.addEventListener('click',e=>{
+  if(!DRAFT) return;
+  if(e.target.id==='dayOn'){ DRAFT.on=true; DRAFT.start=CONFIG.defStart; DRAFT.end=CONFIG.defEnd; renderEditor(); return; }
+  if(e.target.id==='dayOff'){ DRAFT.on=false; renderEditor(); return; }
+  if(e.target.id==='tReset'){ DRAFT.start=CONFIG.defStart; DRAFT.end=CONFIG.defEnd; renderEditor(); return; }
   const tk=e.target.closest('[data-tick]');
   if(tk){
-    const p=DB.purchases.find(x=>x.id===tk.dataset.tick);
-    p.done=!p.done; p.done_date=p.done?openDate:null;
-    push('savePurchase',p); renderSheet(); return;
+    const id=tk.dataset.tick;
+    const p=DRAFT.own.concat(DRAFT.carry,DRAFT.added).find(x=>x.id===id); if(!p) return;
+    p.done=!p.done; p.done_date=p.done?DRAFT.date:'';
+    renderEditor(); return;
   }
   const dl=e.target.closest('[data-del]');
-  if(dl){ const id=dl.dataset.del; DB.purchases=DB.purchases.filter(x=>x.id!==id); push('deletePurchase',{id}); renderSheet(); return; }
-  const de=e.target.closest('[data-delexp]');
-  if(de){ const id=de.dataset.delexp; DB.expenses=DB.expenses.filter(x=>x.id!==id); push('deleteExpense',{id}); renderSheet(); return; }
+  if(dl){
+    const id=dl.dataset.del;
+    if(DRAFT.added.some(x=>x.id===id)) DRAFT.added=DRAFT.added.filter(x=>x.id!==id);
+    else { DRAFT.own=DRAFT.own.filter(x=>x.id!==id); DRAFT.removed.push(id); }
+    renderEditor(); return;
+  }
   if(e.target.id==='paddBtn'){ addPurchase(); return; }
-  if(e.target.id==='eaddBtn'){ addExpense(); return; }
 });
-document.getElementById('shBody').addEventListener('keydown',e=>{
-  if(e.key!=='Enter') return;
-  if(e.target.id==='pnew'){e.preventDefault();addPurchase();}
-  if(e.target.id==='enew'||e.target.id==='eamt'){e.preventDefault();addExpense();}
+edBody.addEventListener('keydown',e=>{
+  if(e.key==='Enter' && e.target.id==='pnew'){e.preventDefault();addPurchase();}
 });
-document.getElementById('shBody').addEventListener('change',e=>{
-  const day=getDay(openDate);
-  if(e.target.id==='cmt'){ day.comment=e.target.value; saveDay(day); }
-  if(e.target.id==='movedTo'){
-    day.moved_to=e.target.value; saveDay(day);
-    if(e.target.value){ const t=getDay(e.target.value); t.status='доп'; if(!t.hours)t.hours=CONFIG.planHours; saveDay(t); }
-    renderSheet();
+edBody.addEventListener('input',e=>{
+  if(!DRAFT) return;
+  if(e.target.id==='cmt'){ DRAFT.comment=e.target.value; markDirty(); return; }
+  if(e.target.id==='tStart'||e.target.id==='tEnd'){
+    const v=e.target.value; if(toMin(v)===null) return;
+    if(e.target.id==='tStart') DRAFT.start=v; else DRAFT.end=v;
+    renderCalc(); markDirty();
   }
 });
 function addPurchase(){
-  const i=document.getElementById('pnew'), t=i.value.trim(); if(!t) return;
-  const p={id:newId(),day:openDate,title:t,done:false,done_date:null,created_by:WHO};
-  DB.purchases.push(p); push('savePurchase',p);
-  renderSheet(); const n=document.getElementById('pnew'); if(n) n.focus();
+  const i=document.getElementById('pnew'), t=i.value.trim(); if(!t||!DRAFT) return;
+  DRAFT.added.push({id:newId(),day:DRAFT.date,title:t,done:false,done_date:'',created_by:WHO});
+  renderEditor(); const n=document.getElementById('pnew'); if(n) n.focus();
 }
-function addExpense(){
-  const t=document.getElementById('enew').value.trim(), a=Number(document.getElementById('eamt').value);
-  if(!t||!a){ toast('Нужны название и сумма'); return; }
-  const ex={id:newId(),day:openDate,title:t,amount:a,by:WHO};
-  DB.expenses.push(ex); push('saveExpense',ex);
-  renderSheet(); const n=document.getElementById('enew'); if(n) n.focus();
+/* карманные */
+function addSpend(){
+  const t=document.getElementById('xTitle'), a=document.getElementById('xAmt'), d=document.getElementById('xDate');
+  const amount=Math.round(Number(a.value)), title=t.value.trim();
+  let day=d.value||TODAY; if(day<CONFIG.startDate) day=CONFIG.startDate;
+  if(!title||!(amount>0)){ toast('Нужны название и сумма'); return; }
+  upsert('expenses',{id:newId(),day,title,amount,by:WHO});
+  t.value=''; a.value=''; renderAll(); toast('Списано '+money(amount)+' дин');
 }
-
-document.getElementById('from').onchange=renderPay;
-document.getElementById('to').onchange=renderPay;
-document.querySelectorAll('.presets button').forEach(b=>{
-  b.onclick=()=>{
-    if(b.dataset.preset==='2w'){
-      const r=defaultRange();
-      document.getElementById('from').value=r.from; document.getElementById('to').value=r.to;
-    } else {
-      const unpaid=Object.keys(DB.days).filter(d=>!DB.days[d].payout_id).sort();
-      document.getElementById('from').value=unpaid[0]||periodStart();
-      document.getElementById('to').value=TODAY;
-    }
-    renderPay();
-  };
-});
-document.getElementById('payBtn').onclick=()=>{
-  const from=document.getElementById('from').value, to=document.getElementById('to').value;
-  const total=window.__payTotal||0;
-  if(!confirm(`Отметить период ${fmtShort(from)} — ${fmtShort(to)} оплаченным на ${money(total)} дин?\n\nДни будут закрыты от изменений.`)) return;
-  const payout={id:newId(),from,to,total,paid_date:TODAY};
-  const dates=[];
-  for(let d=from; d<=to; d=addDays(d,1)){
-    const day=getDay(d);
-    if(day.payout_id||!day.status) continue;
-    day.payout_id=payout.id; day.updated_by=WHO; day.updated_at=new Date().toISOString();
-    DB.days[d]=day; dates.push(d);
+function addTopup(){
+  const a=document.getElementById('tuAmt'), c=document.getElementById('tuNote');
+  const amount=Math.round(Number(a.value));
+  if(!(amount>0)){ toast('Нужна сумма'); return; }
+  upsert('topups',{id:newId(),date:TODAY,amount,comment:c.value.trim(),by:WHO});
+  a.value=''; c.value=''; renderAll(); toast('Выдано '+money(amount)+' дин');
+}
+document.getElementById('xAdd').onclick=addSpend;
+document.getElementById('tuAdd').onclick=addTopup;
+['xTitle','xAmt'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{
+  if(e.key!=='Enter') return; e.preventDefault();
+  if(id==='xTitle') document.getElementById('xAmt').focus(); else addSpend();
+}));
+['tuAmt','tuNote'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{
+  if(e.key==='Enter'){e.preventDefault();addTopup();}
+}));
+/* удаление в два касания: × → «Удалить?» */
+document.getElementById('ops').addEventListener('click',e=>{
+  const b=e.target.closest('[data-del2]'); if(!b) return;
+  if(!b.classList.contains('arm')){
+    b.classList.add('arm'); b.textContent='Удалить?';
+    setTimeout(()=>{ if(b.isConnected){ b.classList.remove('arm'); b.textContent='×'; } },2500);
+    return;
   }
-  DB.payouts.push(payout);
-  push('closePayout',{payout,days:dates});
-  renderPay(); renderWeek(); toast('Выплата отмечена');
+  const [kind,id]=b.dataset.del2.split(':');
+  removeRow(kind==='in'?'topups':'expenses',id); renderAll();
+});
+
+/* оплата */
+document.getElementById('payTo').addEventListener('change',e=>{ payTo=e.target.value||TODAY; disarmPay(); renderAll(); });
+document.getElementById('payToday').onclick=()=>{ payTo=TODAY; disarmPay(); renderAll(); };
+document.getElementById('payBtn').onclick=()=>{
+  if(!payArmed){
+    payArmed=true; renderPay();
+    clearTimeout(payArmT); payArmT=setTimeout(()=>{ payArmed=false; renderPay(); },4000);
+    return;
+  }
+  closePayout();
 };
 
 /* ============================================================
-   14. ЗАПУСК И ФОНОВОЕ ОБНОВЛЕНИЕ
+   11. ЗАПУСК И ФОНОВОЕ ОБНОВЛЕНИЕ
    ============================================================ */
+function hideBoot(){ document.getElementById('boot').classList.add('hidden'); }
 async function boot(){
-  const b=document.getElementById('boot'), msg=document.getElementById('bootMsg'), retry=document.getElementById('bootRetry');
-  if(API.url.startsWith('ВСТАВЬТЕ')){
-    msg.textContent='Адрес таблицы не указан. Откройте файл в редакторе и впишите адрес веб-приложения и токен в блок API вверху скрипта.';
-    retry.hidden=true; return;
+  const msg=document.getElementById('bootMsg'), retry=document.getElementById('bootRetry');
+  const c=loadCache();
+  if(c && c.data){
+    ingest(c.data);
+    (c.pending||[]).forEach(o=>PENDING.set(opKey(o),o));
+    renderAll(); hideBoot();
+    setSync(PENDING.size?'saving':'ok');
   }
   msg.textContent='Загружаю таблицу…'; retry.hidden=true;
   try{
-    ingest(await api('load'));
-    const r=defaultRange();
-    document.getElementById('from').value=r.from;
-    document.getElementById('to').value=r.to;
-    document.getElementById('foot').textContent='Данные хранятся в Google-таблице. Обновление раз в полминуты.';
-    renderWeek(); renderPay(); setSync('ok');
-    b.classList.add('hidden');
+    if(PENDING.size){ await flush(); }
+    else{
+      const data=await api('load');
+      if(!PENDING.size && !INFLIGHT){ ingest(data); saveCache(); renderAll(true); }
+      setSync('ok');
+    }
+    hideBoot();
   }catch(e){
+    if(c && c.data){ setSync('offline'); return; }
     msg.textContent='Не получилось связаться с таблицей: '+e.message;
     retry.hidden=false;
   }
 }
 document.getElementById('bootRetry').onclick=boot;
 
-/* тихое обновление: только когда вкладка видна, шторка закрыта и очередь пуста */
-setInterval(async()=>{
-  if(document.hidden||openDate||QUEUE.length||flushing) return;
-  try{ ingest(await api('load')); renderWeek(); renderPay(); setSync('ok'); }catch(e){ setSync('offline'); }
+/* тихое обновление раз в полминуты, пока вкладка видна */
+setInterval(()=>{
+  const t=iso(new Date());
+  if(t!==TODAY){ TODAY=t; renderAll(); }
+  refresh();
 },30000);
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden) flush(); });
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ flush(); refresh(); } });
 
 boot();
 </script>
