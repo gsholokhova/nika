@@ -103,11 +103,7 @@ nav button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
 .sect:last-child{margin-bottom:0}
 .sect > h3{margin:0 0 9px;font-size:13px;font-weight:600;color:var(--muted)}
 
-.timerow{display:flex;gap:10px}
-.timerow label{flex:1 1 0;min-width:0;font-size:12.5px;color:var(--muted)}
-.timerow input{display:block;width:100%;margin-top:5px;border:1px solid var(--rule);border-radius:11px;padding:11px 12px;
-  background:none;font-size:20px;font-weight:600;letter-spacing:-.01em;-webkit-appearance:none;appearance:none;min-height:52px;min-width:0;max-width:100%}
-.timerow input[disabled]{color:var(--ink);opacity:1;background:#F5F7F4;border-color:transparent}
+.timerow{display:flex;gap:8px;align-items:stretch}
 .calc{margin-top:12px;display:flex;justify-content:space-between;align-items:baseline;font-size:14.5px;color:var(--muted)}
 .calc b{font-size:20px;color:var(--ink);font-weight:700}
 .warn{margin-top:8px;font-size:12.5px;color:var(--amber);font-weight:500}
@@ -138,10 +134,22 @@ nav button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
 textarea{width:100%;border:1px solid var(--rule);border-radius:11px;padding:11px;background:none;resize:vertical;min-height:74px;font-size:14.5px}
 .meta{font-size:11.5px;color:var(--muted);margin-top:14px}
 .locked{background:#F5F7F4;border-radius:11px;padding:12px 13px;font-size:13.5px;color:var(--muted)}
-.datefield{display:flex;gap:9px;align-items:flex-end}
-.datefield label{flex:1;font-size:12.5px;color:var(--muted)}
-.datefield input{display:block;width:100%;margin-top:5px;border:1px solid var(--rule);border-radius:9px;padding:9px 10px;background:none;font-size:14.5px;min-height:42px}
-.datefield .lnk{font-size:13px;color:var(--green);font-weight:600;padding:0 2px 12px}
+/* поле даты/времени: видно аккуратную подпись, а по нажатию открывается системный выбор */
+.dpick{position:relative;flex:1 1 0;min-width:0;display:block;border:1px solid var(--rule);border-radius:11px;
+  padding:7px 12px 8px;background:var(--card);cursor:pointer;overflow:hidden}
+.dpick:active{background:#F7F8F6}
+.dpick .k{display:block;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dpick b{display:block;font-size:16.5px;font-weight:600;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dpick.big b{font-size:26px;letter-spacing:-.02em;margin-top:2px}
+.dpick.ro{background:#F5F7F4;border-color:transparent;cursor:default}
+.dpick input{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;padding:0;border:0;
+  -webkit-appearance:none;appearance:none;font-size:16px;cursor:pointer}
+.dpick input[disabled]{cursor:default}
+.range{display:flex;gap:8px;align-items:center}
+.rdash{flex:0 0 auto;color:var(--muted);font-size:15px}
+.lnk{font-size:13px;color:var(--green);font-weight:600;padding:8px 0 0}
+.syncbar{margin-top:10px;background:#FBEFED;border:1px solid #EDCFCA;color:var(--red);border-radius:10px;padding:8px 11px;font-size:12.5px;line-height:1.35}
+.syncbar small{display:block;color:var(--muted);margin-top:2px;font-size:11.5px}
 
 .panel{background:var(--card);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:16px 18px;margin-bottom:18px}
 .panel > h3{margin:0 0 2px;font-size:13px;font-weight:600;color:var(--muted)}
@@ -161,7 +169,9 @@ button.hitem:active{background:#F7F8F6}
 .hitem .d{color:var(--muted);font-size:12.5px;margin-top:2px}
 .hitem b{font-size:15.5px;white-space:nowrap}
 .hitem .r{text-align:right;display:flex;align-items:center;gap:10px}
-.hitem .r small{display:block;color:var(--muted);font-size:11.5px;font-weight:400;margin-top:2px}
+.hitem .r small{display:block;color:var(--muted);font-size:11.5px;font-weight:400;margin-top:2px;white-space:nowrap}
+.hitem > span:first-child{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+.hitem .r{flex:0 0 auto}
 .plus{color:var(--green)}
 .minus{color:var(--ink)}
 .negnote{background:#FBEFED;border:1px solid #EDCFCA;color:var(--red);border-radius:11px;padding:11px 13px;font-size:13.5px;margin:0 18px 18px}
@@ -193,6 +203,7 @@ button.hitem:active{background:#F7F8F6}
       <div class="big num" id="accum"></div>
       <div class="note" id="accumNote"></div>
     </div>
+    <div class="syncbar" id="syncBar" hidden></div>
   </header>
 
   <main>
@@ -219,7 +230,7 @@ button.hitem:active{background:#F7F8F6}
           <input id="xAmt" class="sm" type="number" inputmode="numeric" placeholder="дин" enterkeyhint="done">
         </div>
         <div class="padd">
-          <input id="xDate" type="date">
+          <label class="dpick"><span class="k">Дата</span><b id="xDateTxt"></b><input type="date" id="xDate" aria-label="Дата траты"></label>
           <button id="xAdd">Списать</button>
         </div>
       </div>
@@ -241,10 +252,12 @@ button.hitem:active{background:#F7F8F6}
     <!-- ОПЛАТА -->
     <section id="viewPay" hidden>
       <div class="panel">
-        <div class="datefield">
-          <label>Включить дни по <input type="date" id="payTo"></label>
-          <button class="lnk" id="payToday">сегодня</button>
+        <div class="range">
+          <label class="dpick"><span class="k" id="pfCap">С</span><b id="pfTxt"></b><input type="date" id="payFrom" aria-label="С какой даты"></label>
+          <span class="rdash">—</span>
+          <label class="dpick"><span class="k" id="ptCap">По</span><b id="ptTxt"></b><input type="date" id="payTo" aria-label="По какую дату"></label>
         </div>
+        <button class="lnk" id="payReset" hidden>Вернуть: с последней выплаты по сегодня</button>
         <ul class="led" id="led"></ul>
         <button class="paybtn" id="payBtn">Отметить оплаченным</button>
         <div class="hint" id="payHint"></div>
@@ -257,7 +270,7 @@ button.hitem:active{background:#F7F8F6}
         <h3>История выплат</h3>
         <div id="hist"></div>
       </div>
-      <div class="foot">Оплата пересчитывается сразу, как только меняется любой день. Нажмите на день, чтобы поправить время.</div>
+      <div class="foot">Оплата пересчитывается сразу, как только меняется любой день. Нажмите на день, чтобы поправить время.<br>Версия <span id="ver"></span></div>
     </section>
   </main>
 
@@ -289,7 +302,7 @@ button.hitem:active{background:#F7F8F6}
    Адрес веб-приложения и тот же токен, что в apps-script.gs
    ============================================================ */
 const API = {
-  url:   'https://script.google.com/macros/s/AKfycbyWk2Rgv0j0VQDDNvah1T5Mr2Wtaep0wMJ0cD6LVQ3MkbbNFkzaB-tGSNVSm7szXnHg2A/exec',
+  url:   'https://script.google.com/macros/s/AKfycbw_PDlObCkODv_hPi_ARKWw4CJw8yuBuYOynuzpBSX4ZGJQcUQOkvaUJoIml9StyJ2iqA/exec',
   token: '3650408'
 };
 
@@ -307,10 +320,12 @@ const CONFIG = {
   manualFrom:'2026-10-12',
   legacyPlanDays:[1,2,4],
   nikaEditsTime:false,    // true — Ника тоже сможет добавлять дни и править время
-  // первая выдача карманных — с неё начинается остаток
-  pocketStart:{date:'2026-09-07', amount:10000, comment:'стартовые'}
+  // стартовые 10 000 записаны строкой в листе topups; здесь можно задать начальный остаток вручную,
+  // если его нет в таблице: {date:'2026-09-07', amount:10000, comment:'стартовые'}
+  pocketStart:null
 };
 const LEGACY_ON = ['плановый','доп','отменён_в_день'];
+const VERSION = '2.4';
 
 /* ============================================================
    3. СЕТЬ
@@ -365,7 +380,7 @@ async function flush(){
       if(!newer) PENDING.set(k,o);
       else if(newer.t==='up' && o.t==='up') PENDING.set(k,{t:'up',s:o.s,row:Object.assign({},o.row,newer.row)});
     });
-    saveCache(); setSync('offline');
+    saveCache(); setSync('offline',e.message);
     clearTimeout(flushT); flushT=setTimeout(flush,5000);
   }
 }
@@ -377,13 +392,24 @@ async function refresh(){
     const data=await api('load');
     if(GEN!==g || INFLIGHT || PENDING.size) return;   // пока ждали, что-то поменяли — не затираем
     ingest(data); saveCache(); renderAll(true); setSync('ok');
-  }catch(e){ setSync('offline'); }
+  }catch(e){ setSync('offline',e.message); }
 }
 
-function setSync(s){
+function setSync(s,err){
   const el=document.getElementById('sync');
   el.className = s==='ok' ? '' : s;
   el.title = s==='ok' ? 'Всё сохранено' : s==='saving' ? 'Сохраняю…' : 'Нет связи, повторю';
+  // если что-то не сохранилось — говорим об этом крупно, а не только точкой
+  const bar=document.getElementById('syncBar');
+  if(s!=='offline'){ bar.hidden=true; return; }
+  const n=PENDING.size;
+  let why=err||'';
+  if(/Неизвестное действие/.test(why)) why='Страница обращается к старой версии скрипта — проверьте адрес таблицы в index.html.';
+  bar.innerHTML = (n
+      ? `Не сохранено: ${n} ${plural(n,'изменение ждёт','изменения ждут','изменений ждут')} отправки. Повторяю каждые 5 секунд, ничего не потеряется.`
+      : 'Нет связи с таблицей — показаны последние загруженные данные.')
+    + (why?`<small>${esc(why)}</small>`:'');
+  bar.hidden=false;
 }
 
 /* локальная копия: страница открывается мгновенно, а неотправленное не теряется */
@@ -431,7 +457,9 @@ function dayInfo(date){
     if(r && r.status==='нет'){ /* убран вручную */ }
     else if(r && r.start && r.end){ on=true; start=r.start; end=r.end; }
     else if(r && LEGACY_ON.includes(r.status)){ on=true; start=CONFIG.defStart; end=plusHours(CONFIG.defStart, num(r.hours)||CONFIG.baseHours); }
-    else if((!r || !r.status) && date<CONFIG.manualFrom && CONFIG.legacyPlanDays.includes(parse(date).getDay())){
+    // старый «плановый по умолчанию»: строки нет вовсе или её создала выплата (без статуса и без автора).
+    // Пустой статус с автором — это день, убранный вручную кнопкой «Убрать», он остаётся пустым.
+    else if((!r || (!r.status && !r.updated_by)) && date<CONFIG.manualFrom && CONFIG.legacyPlanDays.includes(parse(date).getDay())){
       on=true; start=CONFIG.defStart; end=CONFIG.defEnd;
     }
   }
@@ -475,20 +503,21 @@ function hoursBetween(a,b){
 const amountFor=h=>Math.round(Math.min(h,CONFIG.baseHours)*CONFIG.rateBase + Math.max(0,h-CONFIG.baseHours)*CONFIG.rateExtra);
 
 /* Оплата — зеркало дней: всё неоплаченное до выбранной даты, считается заново при каждом изменении */
-function computePay(to){
-  const days=[]; let baseH=0, extraH=0, later=0;
+function computePay(from,to){
+  const days=[]; let baseH=0, extraH=0, later=0, earlier=0;
   const lastDay=Object.keys(DB.days).sort().pop()||to;
   const end=lastDay>to?lastDay:to;
   for(let d=CONFIG.startDate; d<=end; d=addDays(d,1)){
     const x=dayInfo(d);
     if(!x.on || x.payout_id) continue;
     if(d>to){ later++; continue; }
+    if(d<from){ earlier++; continue; }
     days.push(x);
     baseH+=Math.min(x.hours,CONFIG.baseHours);
     extraH+=Math.max(0,x.hours-CONFIG.baseHours);
   }
   const baseSum=Math.round(baseH*CONFIG.rateBase), extraSum=Math.round(extraH*CONFIG.rateExtra);
-  return {days,baseH,extraH,baseSum,extraSum,later,total:baseSum+extraSum};
+  return {days,baseH,extraH,baseSum,extraSum,later,earlier,total:baseSum+extraSum};
 }
 
 /* Карманные: выдано минус потрачено */
@@ -525,7 +554,12 @@ let TODAY=iso(new Date());
 let WHO='Н';
 const isBoss=()=>WHO==='Г';
 const canPlan=()=>isBoss()||CONFIG.nikaEditsTime;
-let TAB='week', weekStart=mondayOf(TODAY), openDate=null, payTo=TODAY;
+let TAB='week', weekStart=mondayOf(TODAY), openDate=null;
+// период оплаты: по умолчанию с даты последней выплаты по сегодня; нажатием можно поменять
+let payFromUser=null, payToUser=null;
+const lastPayoutTo=()=>DB.payouts.length?DB.payouts[DB.payouts.length-1].to:CONFIG.startDate;
+const getFrom=()=>payFromUser||lastPayoutTo();
+const getTo=()=>payToUser||TODAY;
 function plural(n,a,b,c){const m=n%100,k=n%10;if(m>10&&m<20)return c;if(k===1)return a;if(k>=2&&k<=4)return b;return c;}
 const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const whoName=w=>w==='Г'?'Галина':'Ника';
@@ -544,7 +578,7 @@ function renderHeader(){
   const big=document.getElementById('accum'), note=document.getElementById('accumNote');
   big.classList.remove('neg');
   if(TAB==='pay'){
-    const p=computePay(payTo);
+    const p=computePay(getFrom(),getTo());
     big.innerHTML=money(p.total)+'<span>дин</span>';
     note.textContent=p.days.length?`к выплате · ${p.days.length} ${plural(p.days.length,'день','дня','дней')}`:'неоплаченных дней нет';
   } else if(TAB==='pocket'){
@@ -685,8 +719,9 @@ function renderEditor(){
     h+=`<div class="sect"><h3>Работа</h3>`;
     if(D.on){
       h+=`<div class="card"><div class="timerow">
-          <label>С<input type="time" id="tStart" step="900" value="${D.start}" ${edit?'':'disabled'}></label>
-          <label>До<input type="time" id="tEnd" step="900" value="${D.end}" ${edit?'':'disabled'}></label>
+          <label class="dpick big${edit?'':' ro'}"><span class="k">С</span><b id="tStartTxt" class="num">${D.start}</b><input type="time" id="tStart" step="900" value="${D.start}" ${edit?'':'disabled'}></label>
+          <span class="rdash">—</span>
+          <label class="dpick big${edit?'':' ro'}"><span class="k">До</span><b id="tEndTxt" class="num">${D.end}</b><input type="time" id="tEnd" step="900" value="${D.end}" ${edit?'':'disabled'}></label>
         </div><div id="calc"></div></div>`;
       if(edit){
         h+=`<div class="sbtns"><button class="ghost" id="tReset">${CONFIG.defStart}–${CONFIG.defEnd}</button>
@@ -758,6 +793,7 @@ function renderPocket(){
   document.getElementById('topupPanel').hidden=!isBoss();
   const xd=document.getElementById('xDate');
   xd.min=CONFIG.startDate; if(!xd.value) xd.value=TODAY;
+  document.getElementById('xDateTxt').textContent=xd.value===TODAY?'сегодня':fmtDow(xd.value);
   const {ops,balance}=pocketOps();
   document.getElementById('negNote').innerHTML = balance<0
     ? `<div class="negnote">Ника потратила на ${money(-balance)} дин больше, чем было выдано. Выдайте ещё — минус закроется.</div>` : '';
@@ -778,9 +814,16 @@ function renderPocket(){
 /* ---------- оплата ---------- */
 let payArmed=false, payArmT=null;
 function renderPay(){
-  const inp=document.getElementById('payTo');
-  if(document.activeElement!==inp) inp.value=payTo;
-  const p=computePay(payTo);
+  const from=getFrom(), to=getTo();
+  document.getElementById('payFrom').value=from;
+  document.getElementById('payTo').value=to;
+  document.getElementById('pfTxt').textContent=fmtDow(from);
+  document.getElementById('ptTxt').textContent=fmtDow(to);
+  document.getElementById('pfCap').textContent=payFromUser?'С':(DB.payouts.length?'С · последняя выплата':'С · начало');
+  document.getElementById('ptCap').textContent=payToUser?'По':'По · сегодня';
+  document.getElementById('payReset').hidden=!payFromUser&&!payToUser;
+  document.getElementById('ver').textContent=VERSION;
+  const p=computePay(from,to);
   let h='';
   h+=row(`Базовые часы · ${fmtH(p.baseH)} ч × ${money(CONFIG.rateBase)}`,p.baseSum);
   if(p.extraH) h+=row(`Сверх ${CONFIG.baseHours} ч в день · ${fmtH(p.extraH)} ч × ${money(CONFIG.rateExtra)}`,p.extraSum);
@@ -795,7 +838,8 @@ function renderPay(){
   document.getElementById('payHint').textContent=
     !isBoss()?'Отмечать выплаты может только Галина.'
     :payArmed?'Нажмите ещё раз — дни этой выплаты закроются от изменений.'
-    :p.later?`Ещё ${p.later} ${plural(p.later,'день','дня','дней')} после ${fmtShort(payTo)} — в следующую выплату.`
+    :p.earlier?`До ${fmtShort(from)} есть ещё ${p.earlier} ${plural(p.earlier,'неоплаченный день','неоплаченных дня','неоплаченных дней')} — сдвиньте дату «С», чтобы включить в выплату.`
+    :p.later?`Ещё ${p.later} ${plural(p.later,'день','дня','дней')} после ${fmtShort(to)} — в следующую выплату.`
     :'После отметки дни выплаты закрываются от изменений.';
 
   const pd=document.getElementById('payDays');
@@ -819,13 +863,14 @@ const row=(k,v)=>`<li><span class="k">${k}</span><span class="num">${money(v)}</
 function disarmPay(){ payArmed=false; clearTimeout(payArmT); }
 
 function closePayout(){
-  const p=computePay(payTo);
+  const p=computePay(getFrom(),getTo());
   if(!p.total) return;
   const dates=p.days.map(d=>d.date).sort();
-  const payout={id:newId(),from:dates[0],to:payTo,total:p.total,paid_date:TODAY};
+  const payout={id:newId(),from:dates[0],to:getTo(),total:p.total,paid_date:TODAY};
   p.days.forEach(d=>upsert('days',stamp({date:d.date,payout_id:payout.id})));
   upsert('payouts',payout);
   DB.payouts.sort((a,b)=>a.to<b.to?-1:1);
+  payFromUser=null; payToUser=null;
   disarmPay(); renderAll(); toast('Выплата отмечена');
 }
 
@@ -914,15 +959,18 @@ edBody.addEventListener('click',e=>{
 edBody.addEventListener('keydown',e=>{
   if(e.key==='Enter' && e.target.id==='pnew'){e.preventDefault();addPurchase();}
 });
-edBody.addEventListener('input',e=>{
+function onEdInput(e){
   if(!DRAFT) return;
   if(e.target.id==='cmt'){ DRAFT.comment=e.target.value; markDirty(); return; }
   if(e.target.id==='tStart'||e.target.id==='tEnd'){
     const v=e.target.value; if(toMin(v)===null) return;
     if(e.target.id==='tStart') DRAFT.start=v; else DRAFT.end=v;
+    document.getElementById(e.target.id+'Txt').textContent=v.slice(0,5);
     renderCalc(); markDirty();
   }
-});
+}
+edBody.addEventListener('input',onEdInput);
+edBody.addEventListener('change',onEdInput);   // iOS иногда шлёт только change
 function addPurchase(){
   const i=document.getElementById('pnew'), t=i.value.trim(); if(!t||!DRAFT) return;
   DRAFT.added.push({id:newId(),day:DRAFT.date,title:t,done:false,done_date:'',created_by:WHO});
@@ -945,6 +993,10 @@ function addTopup(){
   a.value=''; c.value=''; renderAll(); toast('Выдано '+money(amount)+' дин');
 }
 document.getElementById('xAdd').onclick=addSpend;
+document.getElementById('xDate').addEventListener('change',e=>{
+  if(!e.target.value) e.target.value=TODAY;
+  document.getElementById('xDateTxt').textContent=e.target.value===TODAY?'сегодня':fmtDow(e.target.value);
+});
 document.getElementById('tuAdd').onclick=addTopup;
 ['xTitle','xAmt'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{
   if(e.key!=='Enter') return; e.preventDefault();
@@ -966,8 +1018,17 @@ document.getElementById('ops').addEventListener('click',e=>{
 });
 
 /* оплата */
-document.getElementById('payTo').addEventListener('change',e=>{ payTo=e.target.value||TODAY; disarmPay(); renderAll(); });
-document.getElementById('payToday').onclick=()=>{ payTo=TODAY; disarmPay(); renderAll(); };
+document.getElementById('payFrom').addEventListener('change',e=>{
+  const v=e.target.value; payFromUser=(v&&v!==lastPayoutTo())?v:null; disarmPay(); renderAll(); });
+document.getElementById('payTo').addEventListener('change',e=>{
+  const v=e.target.value; payToUser=(v&&v!==TODAY)?v:null; disarmPay(); renderAll(); });
+document.getElementById('payReset').onclick=()=>{ payFromUser=null; payToUser=null; disarmPay(); renderAll(); };
+/* на компьютере невидимое поле само не раскрывается — открываем выбор явно */
+document.addEventListener('click',e=>{
+  const l=e.target.closest('.dpick'); if(!l) return;
+  const i=l.querySelector('input'); if(!i||i.disabled||!i.showPicker) return;
+  try{ i.showPicker(); }catch(_){}
+});
 document.getElementById('payBtn').onclick=()=>{
   if(!payArmed){
     payArmed=true; renderPay();
@@ -1000,7 +1061,7 @@ async function boot(){
     }
     hideBoot();
   }catch(e){
-    if(c && c.data){ setSync('offline'); return; }
+    if(c && c.data){ setSync('offline',e.message); return; }
     msg.textContent='Не получилось связаться с таблицей: '+e.message;
     retry.hidden=false;
   }
